@@ -6,7 +6,7 @@ Meet the file main dot c. Eight lines. The three lines that start with a hash si
 
 2
 00:00:12.785 --> 00:00:36.783
-Quick check. When the copier finishes, how many lines is the file? Still eight? About ten? About eight hundred? Or none, because it's machine code now? Pause here, and pick one. About eight hundred. Eight hundred and twenty five, in fact. Standard I O dot h alone brings in about eight hundred and five lines of declarations.
+Quick check. When the copier finishes, how many lines is the file? Still eight? About ten? About eight hundred? Or none, because it's machine code now? Pause here, and pick one. About eight hundred. Eight hundred and twenty-five, in fact. Standard I O dot h alone brings in about eight hundred and five lines of declarations.
 
 3
 00:00:37.483 --> 00:00:49.450
@@ -26,7 +26,7 @@ Comments are deleted too. The compiler never sees them.
 
 7
 00:01:15.448 --> 00:01:23.353
-Out comes main dot i: eight hundred and twenty five lines of plain C. It's the only file the compiler ever reads.
+Out comes main dot i: eight hundred and twenty-five lines of plain C. It's the only file the compiler ever reads.
 
 8
 00:01:24.053 --> 00:01:32.729
@@ -66,7 +66,7 @@ Every blank gets a relocation note: which bytes, and which name. The linker read
 
 17
 00:03:28.562 --> 00:03:39.972
-Put together, that's main dot o, fifteen hundred and seventy six bytes. Its symbol table says what it has, T main, and what it needs from someone else: U print f, and U square.
+Put together, that's main dot o, fifteen hundred and seventy-six bytes. Its symbol table says what it has, T main, and what it needs from someone else: U print f, and U square.
 
 18
 00:03:40.672 --> 00:03:49.786
@@ -94,7 +94,7 @@ Print f lives in lib C dot S O, a shared library, so its address isn't known yet
 
 24
 00:04:55.859 --> 00:05:04.553
-That's why app is only sixteen kilobytes. With dash static, L D copies lib C in, and the file is forty nine times bigger.
+That's why app is only sixteen kilobytes. With dash static, L D copies lib C in, and the file is forty-nine times bigger.
 
 25
 00:05:05.253 --> 00:05:13.365

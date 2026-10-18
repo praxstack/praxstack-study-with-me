@@ -660,7 +660,7 @@ const CH = [
     { cap: "Before the copier runs, make a guess.", say: "Before the copier runs, make a guess. When it finishes, how many lines is the file?",
       ask: { q: "The copier finishes. How many lines is the file now?", opts: ["Still 8", "About 10", "About 800", "None, it's machine code now"], ans: 2, hint: "#include means: paste that entire file right here.", why: "825. stdio.h alone brings in about 805 lines of declarations.",
         sayQ: "When the copier finishes, how many lines is the file?", sayOpts: "Still eight? About ten? About eight hundred? Or none, because it's machine code now?",
-        sayHint: "Not quite. Hash include means: paste that entire file, right here.", sayWhy: "About eight hundred. Eight hundred and twenty five, in fact. Standard I O dot h alone brings in about eight hundred and five lines of declarations." } },
+        sayHint: "Not quite. Hash include means: paste that entire file, right here.", sayWhy: "About eight hundred. Eight hundred and twenty-five, in fact. Standard I O dot h alone brings in about eight hundred and five lines of declarations." } },
     { cap: "#include <stdio.h> is replaced by the whole of stdio.h, about 805 lines. One of them is the only thing the compiler will ever know about printf.",
       say: "Hash include standard I O dot h is replaced by the whole of that file, about eight hundred and five lines. One of them is the only thing the compiler will ever know about print f." },
     { cap: "#include \"square.h\" pastes in one line: the promise that square takes an int and returns an int. The #ifndef guard makes a second paste come out empty.",
@@ -669,7 +669,7 @@ const CH = [
       say: "Hash define N 5 is find and replace. Every N becomes 5, and the define line itself disappears." },
     { cap: "Comments are deleted too. The compiler never sees them.", say: "Comments are deleted too. The compiler never sees them." },
     { cap: "Out comes main.i: 825 lines of plain C. It's the only file the compiler ever reads.",
-      say: "Out comes main dot i: eight hundred and twenty five lines of plain C. It's the only file the compiler ever reads." } ] },
+      say: "Out comes main dot i: eight hundred and twenty-five lines of plain C. It's the only file the compiler ever reads." } ] },
   { name: "2 compile", scene: ch2, steps: [
     { cap: "Next stop is cc1, the actual compiler. It reads main.i and turns each statement into a tree of what it means.",
       say: "Next stop is C C 1, the actual compiler. It reads main dot i, and turns each statement into a tree of what it means." },
@@ -695,7 +695,7 @@ const CH = [
     { cap: "Every blank gets a relocation note: which bytes, which name. The linker reads these later.",
       say: "Every blank gets a relocation note: which bytes, and which name. The linker reads these later." },
     { cap: "Put together, that's main.o, 1,576 bytes. Its symbol table says what it has, T main, and what it needs from someone else, U printf and U square.",
-      say: "Put together, that's main dot o, fifteen hundred and seventy six bytes. Its symbol table says what it has, T main, and what it needs from someone else: U print f, and U square." } ] },
+      say: "Put together, that's main dot o, fifteen hundred and seventy-six bytes. Its symbol table says what it has, T main, and what it needs from someone else: U print f, and U square." } ] },
   { name: "4 link", scene: ch4, steps: [
     { cap: "ld, the linker, gets main.o, square.o, libc, and five startup files gcc adds that you never wrote.",
       say: "L D, the linker, gets main dot o, square dot o, lib C, and five startup files that G C C adds, and you never wrote." },
@@ -712,7 +712,7 @@ const CH = [
     { cap: "printf lives in libc.so, a shared library, so its address isn't known yet. The call goes to a stub, printf@plt, that reads a slot filled in at load time.",
       say: "Print f lives in lib C dot S O, a shared library, so its address isn't known yet. The call goes to a small stub that reads a slot, and the slot gets filled in at load time." },
     { cap: "That's why app is only 16 KB. With -static, ld copies libc in and the file is 49 times bigger.",
-      say: "That's why app is only sixteen kilobytes. With dash static, L D copies lib C in, and the file is forty nine times bigger." } ] },
+      say: "That's why app is only sixteen kilobytes. With dash static, L D copies lib C in, and the file is forty-nine times bigger." } ] },
   { name: "5 load + run", scene: ch5, steps: [
     { cap: "You type ./app. The kernel maps the file at 0x555555554000 and makes a stack. printf's slot still holds a placeholder, 0x1030.",
       say: "You type dot slash app. The kernel maps the file into memory, and makes a stack. Print f's slot still holds a placeholder." },
