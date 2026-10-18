@@ -889,6 +889,7 @@ function speak(src, done) {
   if (!audio) return false;
   audio.pause(); onClipEnd = null;
   if (!soundOn || !armed) return false;
+  const fv = document.getElementById("film"); if (fv && !fv.paused) fv.pause();
   onClipEnd = done || null; audio.src = src; audio.currentTime = 0;
   const p = audio.play(); if (p && p.catch) p.catch(() => { const f = onClipEnd; onClipEnd = null; if (f) f(true); });
   return true;
@@ -898,14 +899,14 @@ function hush() { if (audio) { audio.pause(); onClipEnd = null; } }
 /* ---------- UI ---------- */
 const $ = (id) => document.getElementById(id);
 const tabs = $("tabs"), cap = $("cap"), dots = $("dots"), ask = $("ask"), askq = $("askq"), askopts = $("askopts"), askfb = $("askfb"), labbar = $("labbar"), fig = $("fig");
-let ch = 0, st = 0, playing = false, timer = 0;
+let ch = 0, st = 0, playing = false, timer = 0, capTimer = 0;
 const answered = {};
 CH.forEach((c, j) => { const b = document.createElement("button"); b.className = "tab"; b.type = "button"; b.setAttribute("role", "tab"); b.id = "tab" + j; b.textContent = c.name; b.addEventListener("click", () => { stop(); go(j, 0, true); }); tabs.appendChild(b); });
 function go(c, s, animate) {
   ch = c; st = s; const C = CH[ch], S = C.steps[st];
   render(scene(ch, st), animate);
   [...tabs.children].forEach((b, j) => b.setAttribute("aria-selected", String(j === ch)));
-  cap.style.opacity = 0; setTimeout(() => { cap.textContent = S.cap; cap.style.opacity = 1; }, animate && !reduce ? 160 : 0);
+  cap.style.opacity = 0; clearTimeout(capTimer); capTimer = setTimeout(() => { cap.textContent = S.cap; cap.style.opacity = 1; }, animate && !reduce ? 160 : 0);
   dots.innerHTML = "";
   C.steps.forEach((x, j) => { const d = document.createElement("button"); d.type = "button"; d.className = "dot" + (j === st ? " on" : "") + (x.ask ? " q" : ""); d.setAttribute("aria-label", `step ${j + 1}${x.ask ? ", a question" : ""}${x.lab ? ", the flag lab" : ""}`); d.addEventListener("click", () => { stop(); go(ch, j, true); }); dots.appendChild(d); });
   $("where").textContent = `${st + 1} of ${C.steps.length}`;
@@ -914,7 +915,7 @@ function go(c, s, animate) {
   $("next").textContent = st === C.steps.length - 1 && !last ? "Next stop" : "Next";
   $("next").disabled = last;
   showAsk(S); showLab(S);
-  speak(clipName(ch, st), () => { if (playing) timer = setTimeout(advance, 900); });
+  speak(clipName(ch, st), afterClip);
 }
 function showAsk(S) {
   const id = ch + ":" + st;
@@ -959,8 +960,9 @@ function schedule() {
   if (soundOn && armed && audio && !audio.paused) return; // the clip's end moves us on
   timer = setTimeout(advance, 2600 + S.cap.length * 48);
 }
+function afterClip() { if (!playing) return; const S = CH[ch].steps[st]; if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return; timer = setTimeout(advance, 900); }
 function stop() { playing = false; clearTimeout(timer); $("play").textContent = "Play"; }
-$("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { playing = true; $("play").textContent = "Pause"; if (soundOn) speak(clipName(ch, st), () => { if (playing) timer = setTimeout(advance, 900); }); else schedule(); } });
+$("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { playing = true; $("play").textContent = "Pause"; if (soundOn) speak(clipName(ch, st), afterClip); else schedule(); } });
 $("next").addEventListener("click", () => { stop(); advance(); });
 $("prev").addEventListener("click", () => { stop(); if (st > 0) go(ch, st - 1, false); else if (ch > 0) go(ch - 1, CH[ch - 1].steps.length - 1, false); });
 document.addEventListener("keydown", (e) => { armed = true; if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; if (e.key === "ArrowRight") { stop(); advance(); } else if (e.key === "ArrowLeft") $("prev").click(); });
@@ -969,7 +971,7 @@ document.addEventListener("pointerdown", () => { armed = true; }, true);
 /* sound toggle */
 function setSound(on) { soundOn = on; const b = $("snd"); b.setAttribute("aria-pressed", String(on)); $("sndt").textContent = on ? "Sound on" : "Sound off"; try { localStorage.setItem("cbuild-sound", on ? "on" : "off"); } catch (e) { /* ignore */ } }
 setSound(soundOn);
-$("snd").addEventListener("click", () => { setSound(!soundOn); if (soundOn) { armed = true; speak(clipName(ch, st), () => { if (playing) timer = setTimeout(advance, 900); }); } else { hush(); if (playing) schedule(); } });
+$("snd").addEventListener("click", () => { setSound(!soundOn); if (soundOn) { armed = true; speak(clipName(ch, st), afterClip); } else { hush(); if (playing) schedule(); } });
 
 /* looks */
 const SKINS = [["", "Notebook"], ["chalk", "Chalkboard"], ["blueprint", "Blueprint"], ["tokyo", "Tokyo Night"], ["terminal", "Terminal"]];
@@ -996,6 +998,7 @@ function setFilm(k, why) {
   document.querySelectorAll("#filmpick .skin").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === f[0])));
   $("filmnote").textContent = why || `Playing the ${f[1]} film.`;
 }
+$("film").addEventListener("play", () => { stop(); hush(); });
 FILMS.forEach(([k, name, file]) => { if (!FILMS_READY.has(file)) return; const b = document.createElement("button"); b.type = "button"; b.className = "skin"; b.dataset.k = k; b.textContent = name; b.addEventListener("click", () => setFilm(k)); $("filmpick").appendChild(b); });
 function filmForSkin(k) { if ($("film").paused === false) return; const has = FILMS.some((x) => x[0] === k && FILMS_READY.has(x[2])); setFilm(has ? k : "", has ? null : "No film in this look yet, so this is the Notebook film."); }
 if (!FILM) { let k = ""; try { k = localStorage.getItem("cbuild-skin") || ""; } catch (e) { /* ignore */ } if (!ALLK.has(k)) k = ""; setSkin(k); }
