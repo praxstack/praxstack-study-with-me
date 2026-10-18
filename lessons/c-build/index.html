@@ -588,7 +588,7 @@ function ch5(i) {
 const BUG = ["int sum(int *a, int n) {", "    int total;", "    for (int i = 0; i < n; i++)", "        total += a[i];", "    return total;", "}", "int main(int argc, char **argv) {", "    int a[3] = {1, 2, 3};", "    unsigned int len = 3;", "    if (len > -1) ...", "    int x = 3.9;", '    printf("%s\\n", x);', '    if (x = 4) printf("sum=%d\\n", sum(a, 3));', "}"];
 const TAG = { A: 1, B: 6, C: 9, D: 10, E: 11, F: 12 };
 const CAUGHT = [["E"], ["E", "F"], ["E", "F", "C", "B"], ["E", "F", "C", "B", "D"], ["E", "F", "C", "B", "D"], ["E", "F", "C", "B", "D", "A"]];
-const WNAME = { E: "-Wformat", F: "-Wparentheses", C: "-Wsign-compare", B: "-Wunused-parameter", D: "-Wfloat-conversion", A: "-W(maybe-)uninitialized" };
+const WNAME = { E: "-Wformat", F: "-Wparentheses", C: "-Wsign-compare", B: "-Wunused-parameter", D: "-Wfloat-conversion", A: "-Wuninitialized/-Wmaybe-uninitialized" };
 const SPEED = [["-O0", 2658], ["-Og", 1177], ["-O1", 1042], ["-O2", 1057], ["-O3", 1054], ["-Os", 3445]];
 /* The flag lab. Rules read off all 16 real runs of gcc 13.3 -c buggy.c with these four flags on or off. */
 const FLAGS = [["wall", "-Wall"], ["wextra", "-Wextra"], ["wconv", "-Wconversion"], ["o2", "-O2"]];
