@@ -960,18 +960,18 @@ function schedule() {
   if (soundOn && armed && audio && !audio.paused) return; // the clip's end moves us on
   timer = setTimeout(advance, 2600 + S.cap.length * 48);
 }
-function afterClip() { if (!playing) return; const S = CH[ch].steps[st]; if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return; timer = setTimeout(advance, 900); }
+function afterClip(failed) { if (!playing) return; const S = CH[ch].steps[st]; if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return; clearTimeout(timer); timer = setTimeout(advance, failed ? 2600 + S.cap.length * 48 : 900); }
 function stop() { playing = false; clearTimeout(timer); $("play").textContent = "Play"; }
-$("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { playing = true; $("play").textContent = "Pause"; if (soundOn) speak(clipName(ch, st), afterClip); else schedule(); } });
+$("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { armed = true; playing = true; $("play").textContent = "Pause"; if (!speak(clipName(ch, st), afterClip)) schedule(); } });
 $("next").addEventListener("click", () => { stop(); advance(); });
 $("prev").addEventListener("click", () => { stop(); if (st > 0) go(ch, st - 1, false); else if (ch > 0) go(ch - 1, CH[ch - 1].steps.length - 1, false); });
-document.addEventListener("keydown", (e) => { armed = true; if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; if (e.key === "ArrowRight") { stop(); advance(); } else if (e.key === "ArrowLeft") $("prev").click(); });
+document.addEventListener("keydown", (e) => { armed = true; if (e.target.closest && e.target.closest("video, input, select, textarea")) return; if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; if (e.key === "ArrowRight") { stop(); advance(); } else if (e.key === "ArrowLeft") $("prev").click(); });
 document.addEventListener("pointerdown", () => { armed = true; }, true);
 
 /* sound toggle */
 function setSound(on) { soundOn = on; const b = $("snd"); b.setAttribute("aria-pressed", String(on)); $("sndt").textContent = on ? "Sound on" : "Sound off"; try { localStorage.setItem("cbuild-sound", on ? "on" : "off"); } catch (e) { /* ignore */ } }
 setSound(soundOn);
-$("snd").addEventListener("click", () => { setSound(!soundOn); if (soundOn) { armed = true; speak(clipName(ch, st), afterClip); } else { hush(); if (playing) schedule(); } });
+$("snd").addEventListener("click", () => { setSound(!soundOn); if (soundOn) { armed = true; clearTimeout(timer); if (!speak(clipName(ch, st), afterClip) && playing) schedule(); } else { hush(); if (playing) schedule(); } });
 
 /* looks */
 const SKINS = [["", "Notebook"], ["chalk", "Chalkboard"], ["blueprint", "Blueprint"], ["tokyo", "Tokyo Night"], ["terminal", "Terminal"]];
@@ -987,14 +987,14 @@ SKINS.forEach(([k, name]) => { const b = document.createElement("button"); b.typ
 // Films: one narrated MP4 per look, served next to the page.
 const FILMS = [["", "Notebook", "notebook"], ["blueprint", "Blueprint", "blueprint"], ["tokyo", "Tokyo Night", "tokyo"], ["t-catppuccin-mocha", "Catppuccin Mocha", "catppuccin-mocha"], ["t-gruvbox-hard", "Gruvbox Hard dark", "gruvbox-hard"], ["t-rosepine-dawn", "Rosé Pine Dawn", "rosepine-dawn"], ["t-nord-polar", "Nord Polar Night", "nord-polar"], ["t-kanagawa-wave", "Kanagawa Wave", "kanagawa-wave"]];
 const FILMS_READY = new Set(["notebook", "blueprint", "tokyo"]);
-let filmK = null, capURL = null;
+let filmK = null, capURL = null, capReq = 0;
 function setFilm(k, why) {
   const f = FILMS.find((x) => x[0] === k) || FILMS[0], v = $("film");
   if (filmK === f[0]) return; filmK = f[0];
   v.pause(); v.textContent = ""; v.src = `films/c-build-${f[2]}.mp4`; v.poster = `films/c-build-${f[2]}.jpg`;
   const t = document.createElement("track"); t.kind = "captions"; t.label = "English"; t.srclang = "en"; v.appendChild(t);
   // captions ship as .vtt.txt (some hosts refuse .vtt), so hand the track a text/vtt blob
-  fetch(`films/c-build-${f[2]}.vtt.txt`).then((r) => r.ok ? r.text() : Promise.reject()).then((txt) => { if (filmK === f[0]) { if (capURL) URL.revokeObjectURL(capURL); capURL = URL.createObjectURL(new Blob([txt], { type: "text/vtt" })); t.src = capURL; } }).catch(() => { /* no captions */ });
+  const req = ++capReq; fetch(`films/c-build-${f[2]}.vtt.txt`).then((r) => r.ok ? r.text() : Promise.reject()).then((txt) => { if (req === capReq) { if (capURL) URL.revokeObjectURL(capURL); capURL = URL.createObjectURL(new Blob([txt], { type: "text/vtt" })); t.src = capURL; } }).catch(() => { /* no captions */ });
   document.querySelectorAll("#filmpick .skin").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === f[0])));
   $("filmnote").textContent = why || `Playing the ${f[1]} film.`;
 }
