@@ -309,6 +309,13 @@ section { display: flex; flex-direction: column; gap: 14px }
     <p class="filmnote" id="filmnote"></p>
   </section>
 
+  <section class="filmsec" aria-labelledby="life-h">
+    <h2 id="life-h">Companion film: The Life of main.c</h2>
+    <p>The same journey told a different way: a hand-drawn conveyor belt, a different little program (main.c with mathx.h and an add function), and a quicker pass through the flags. About five minutes. Watch it before or after the board.</p>
+    <video id="lifefilm" controls preload="metadata" playsinline poster="films/life-of-main-c.jpg" src="films/life-of-main-c.mp4"></video>
+    <p class="filmnote">Film by Kai Mori Video Pipeline.</p>
+  </section>
+
   <section aria-labelledby="who-h">
     <h2 id="who-h">Who threw this error?</h2>
     <p>Name the machine first. The fix depends on it.</p>
@@ -889,7 +896,7 @@ if (audio) { audio.preload = "auto"; audio.addEventListener("ended", () => { con
 function speak(src, done) {
   if (!audio) return false;
   const req = ++clipReq; audio.pause(); onClipEnd = null;
-  const fv = document.getElementById("film"); if (fv && !fv.paused) fv.pause(); // the stage takes over even when muted
+  const fv = document.getElementById("film"); if (fv && !fv.paused) fv.pause(); const lv = document.getElementById("lifefilm"); if (lv && !lv.paused) lv.pause(); // the stage takes over even when muted
   if (!soundOn || !armed) return false;
   onClipEnd = done || null; audio.src = src; audio.currentTime = 0;
   const p = audio.play(); if (p && p.catch) p.catch(() => { if (req !== clipReq) return; const f = onClipEnd; onClipEnd = null; if (f) f(true); });
@@ -1000,6 +1007,12 @@ SKINS.forEach(([k, name]) => { const b = document.createElement("button"); b.typ
   for (const [fam, ts] of fams) { const row = document.createElement("div"); row.className = "tfam"; row.innerHTML = `<span class="fn"></span>`; row.firstChild.textContent = fam;
     ts.forEach((t) => { const b = document.createElement("button"); b.type = "button"; b.className = "skin"; b.dataset.k = t.k; const sw = document.createElement("span"); sw.className = "sw"; t.sw.forEach((c) => { const i = document.createElement("i"); i.style.background = c; sw.appendChild(i); }); b.append(sw, t.name); b.addEventListener("click", () => setSkin(t.k)); row.appendChild(b); });
     $("tgrid").appendChild(row); } }
+
+// Companion film: captions via the same .vtt.txt-to-blob trick as the lesson films; only one thing talks at a time.
+(() => { const v = $("lifefilm"); if (!v) return; const tr = document.createElement("track"); tr.kind = "captions"; tr.srclang = "en"; tr.label = "English"; v.appendChild(tr);
+  fetch("films/life-of-main-c.vtt.txt").then((r) => r.ok ? r.text() : Promise.reject()).then((txt) => { tr.src = URL.createObjectURL(new Blob([txt], { type: "text/vtt" })); }).catch(() => { /* no captions */ });
+  v.addEventListener("play", () => { stop(); hush(); const f = $("film"); if (f && !f.paused) f.pause(); });
+  $("film").addEventListener("play", () => { if (!v.paused) v.pause(); }); })();
 
 // Films: one narrated MP4 per look, served next to the page.
 const FILMS = [["", "Notebook", "notebook"], ["blueprint", "Blueprint", "blueprint"], ["tokyo", "Tokyo Night", "tokyo"], ["t-catppuccin-mocha", "Catppuccin Mocha", "catppuccin-mocha"], ["t-gruvbox-hard", "Gruvbox Hard dark", "gruvbox-hard"], ["t-rosepine-dawn", "Rosé Pine Dawn", "rosepine-dawn"], ["t-nord-polar", "Nord Polar Night", "nord-polar"], ["t-kanagawa-wave", "Kanagawa Wave", "kanagawa-wave"]];
