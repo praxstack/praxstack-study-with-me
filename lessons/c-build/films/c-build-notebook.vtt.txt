@@ -49,121 +49,121 @@ Out comes assembly. The 5 moves into register E D I, where x 86 64 passes the fi
 Optimisation happens here too. At O zero, x takes a trip to memory and back. At O 2, it stays in a register: three instructions instead of seven.
 
 13
-00:02:31.244 --> 00:02:38.433
-Every warning and syntax error comes from this stop. You can tell, because they start with file, line, and column.
+00:02:31.244 --> 00:02:41.315
+Syntax errors and type warnings, like the ones you'll meet in the flag lab, come from this stop. Each one points at the file, line, and column in your code.
 
 14
-00:02:39.133 --> 00:02:49.406
+00:02:42.015 --> 00:02:52.287
 The assembler, A S, turns each instruction into bytes. Move 5 into E D I becomes the bytes B F, zero 5, then three zero bytes.
 
 15
-00:02:50.106 --> 00:03:15.644
-Quick check. Square's address still isn't known. What goes in the four bytes after E 8, the call? The word square? Zeros, plus a note to fix them later? A best guess? Or nothing, because the assembler stops with an error? Pause here, and pick one. Zeros, plus a note. Four zero bytes, and a relocation note that says: at byte 0 x 12, put square's address.
+00:02:52.987 --> 00:03:20.654
+Quick check. Square's address still isn't known. What goes in the four bytes after E 8, the call? The word square? Zeros, plus a note to fix them later? A best guess? Or nothing, because the assembler stops with an error? Pause here, and pick one. Zeros, plus a note. Four zero bytes, and a relocation note that says: at byte 0 x 12, fill in the distance from the next instruction to square.
 
 16
-00:03:16.344 --> 00:03:22.852
+00:03:21.354 --> 00:03:27.862
 Every blank gets a relocation note: which bytes, and which name. The linker reads these later.
 
 17
-00:03:23.552 --> 00:03:34.961
+00:03:28.562 --> 00:03:39.972
 Put together, that's main dot o, fifteen hundred and seventy six bytes. Its symbol table says what it has, T main, and what it needs from someone else: U print f, and U square.
 
 18
-00:03:35.661 --> 00:03:44.775
+00:03:40.672 --> 00:03:49.786
 L D, the linker, gets main dot o, square dot o, lib C, and five startup files that G C C adds, and you never wrote.
 
 19
-00:03:45.475 --> 00:04:05.573
+00:03:50.486 --> 00:04:10.583
 Quick check. Leave square dot o off the command line. Which tool complains? The compiler? The linker? The loader, at run time? Or nobody, and it prints garbage? Pause here, and pick one. The linker. The compiler was happy, because the header promised that square exists.
 
 20
-00:04:06.273 --> 00:04:14.180
+00:04:11.283 --> 00:04:19.190
 This is the error: undefined reference to square. The plus 0 x 12 is the exact blank the assembler left.
 
 21
-00:04:14.880 --> 00:04:22.844
+00:04:19.890 --> 00:04:27.855
 With square dot o back, L D matches the U in main dot o to the T in square dot o. Same name, so it's resolved.
 
 22
-00:04:23.544 --> 00:04:37.726
+00:04:28.555 --> 00:04:42.737
 L D picks final addresses: main at 0 x 1 1 4 9, and square at 0 x 1 1 8 2. Then it fills the blank. 0 x 23 is the distance from the next instruction to square.
 
 23
-00:04:38.426 --> 00:04:50.148
+00:04:43.437 --> 00:04:55.159
 Print f lives in lib C dot S O, a shared library, so its address isn't known yet. The call goes to a small stub that reads a slot, and the slot gets filled in at load time.
 
 24
-00:04:50.848 --> 00:04:59.542
+00:04:55.859 --> 00:05:04.553
 That's why app is only sixteen kilobytes. With dash static, L D copies lib C in, and the file is forty nine times bigger.
 
 25
-00:05:00.242 --> 00:05:08.355
+00:05:05.253 --> 00:05:13.365
 You type dot slash app. The kernel maps the file into memory, and makes a stack. Print f's slot still holds a placeholder.
 
 26
-00:05:09.055 --> 00:05:28.903
+00:05:14.065 --> 00:05:33.914
 Quick check. Which code runs first? Main? Underscore start, in app? The loader? Or print f? Pause here, and pick one. The loader. App's interpreter header names it, so the kernel starts the loader first. G D B stops in the loader's start, before app's.
 
 27
-00:05:29.603 --> 00:05:37.745
+00:05:34.614 --> 00:05:42.755
 The kernel starts the loader, L D linux. In elf terms, it's the program's interpreter: the other thing that word can mean.
 
 28
-00:05:38.445 --> 00:05:43.593
+00:05:43.455 --> 00:05:48.604
 The loader looks lib C up in its cache file, then maps lib C into memory.
 
 29
-00:05:44.293 --> 00:05:52.186
+00:05:49.304 --> 00:05:57.197
 It writes print f's real address into app's slot. This build binds everything up front, so that happens before main runs.
 
 30
-00:05:52.886 --> 00:06:01.536
+00:05:57.897 --> 00:06:06.546
 Then it jumps to app's entry point, underscore start, not main. Underscore start calls lib C start main, and that calls your main.
 
 31
-00:06:02.236 --> 00:06:07.667
-Main calls square of 5, which returns 25 in register E A X.
+00:06:07.246 --> 00:06:12.704
+Main calls square of 5, which returns 25 in the E A X register.
 
 32
-00:06:08.367 --> 00:06:17.993
+00:06:13.404 --> 00:06:23.030
 Print f ends in one system call: write three bytes, 2, 5, and a newline, to the screen. Then exit, and the kernel tears the process down.
 
 33
-00:06:18.693 --> 00:06:27.062
-Six bugs in one file. With no flags, G C C 13 catches exactly one: E, the print f mismatch.
+00:06:23.730 --> 00:06:37.879
+Six bugs in one file. With no flags, Ubuntu's G C C 13 catches exactly one: E, the print f mismatch. Ubuntu switches that warning on by default. Stock G C C catches none.
 
 34
-00:06:27.762 --> 00:06:35.465
+00:06:38.579 --> 00:06:46.282
 Dash W all adds F: if x equals 4, with a single equals sign, assigns instead of comparing.
 
 35
-00:06:36.165 --> 00:06:45.310
+00:06:46.982 --> 00:06:56.127
 Dash W extra adds C, where len greater than minus 1 compares unsigned with signed, and B, the unused parameters.
 
 36
-00:06:46.010 --> 00:06:51.331
+00:06:56.827 --> 00:07:02.148
 Dash W conversion adds D: 3 point 9 quietly becomes 3.
 
 37
-00:06:52.031 --> 00:07:14.644
+00:07:02.848 --> 00:07:25.461
 Quick check. Bug A, total never set, still slips through. Which flag finds it? Dash W error? Dash O 2? Dash W pedantic? Or dash g? Pause here, and pick one. Dash O 2. The used-before-set check runs inside the optimiser's data flow passes. At O zero, they never run.
 
 38
-00:07:15.344 --> 00:07:24.529
+00:07:26.161 --> 00:07:35.347
 Dash O 2 finds A. So do at least one build with dash O 2, dash W all, and dash W extra, even while practising.
 
 39
-00:07:25.229 --> 00:07:39.455
+00:07:36.047 --> 00:07:50.273
 Speed. At O zero, the loop counter lives in memory, and the loop takes 2 point 7 seconds. O 1 to O 3 tie at about one second here. O S is slowest, because it picks a short but slow divide.
 
 40
-00:07:40.155 --> 00:07:51.048
+00:07:50.973 --> 00:08:01.866
 Signed overflow is undefined, so dash O 2 assumes x plus 1 never wraps, and returns 1 without checking. Dash F wrap V forces a real compare.
 
 41
-00:07:51.748 --> 00:08:01.114
+00:08:02.566 --> 00:08:11.932
 Reading a at index 4 goes past the end. A plain build prints a garbage number, without a word. The sanitizers stop right at the bad read.
 
 42
-00:08:01.814 --> 00:08:13.107
+00:08:12.632 --> 00:08:23.924
 Same bug in C plus plus: the loop reads v at index 3. The plain build prints 6, and looks fine. The G L I B C X X debug switch catches it on the spot.

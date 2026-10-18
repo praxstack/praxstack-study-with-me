@@ -302,7 +302,7 @@ section { display: flex; flex-direction: column; gap: 14px }
 
   <section class="filmsec" aria-labelledby="film-h">
     <h2 id="film-h">Watch it as a film</h2>
-    <p>The same board, narrated end to end, about seven and a half minutes. The film matches the look you picked above when one exists; otherwise pick one here. Captions are on the CC button.</p>
+    <p>The same board, narrated end to end, about eight and a half minutes. The film matches the look you picked above when one exists; otherwise pick one here. Captions are on the CC button.</p>
     <div class="filmpick" role="group" aria-label="Film look" id="filmpick"><span class="lbl">film:</span></div>
     <video id="film" controls preload="metadata" playsinline></video>
     <p class="filmnote" id="filmnote"></p>
@@ -728,7 +728,7 @@ const CH = [
       say: "It writes print f's real address into app's slot. This build binds everything up front, so that happens before main runs." },
     { cap: "Then it jumps to app's entry point, _start at 0x1060, not main. _start calls __libc_start_main, and that calls your main.",
       say: "Then it jumps to app's entry point, underscore start, not main. Underscore start calls lib C start main, and that calls your main." },
-    { cap: "main calls square(5), which returns 25 in register eax.", say: "Main calls square of 5, which returns 25 in register E A X." },
+    { cap: "main calls square(5), which returns 25 in the eax register.", say: "Main calls square of 5, which returns 25 in the E A X register." },
     { cap: "printf ends in one system call, write(1, \"25\\n\", 3). Then exit_group(0), and the kernel tears the process down.",
       say: "Print f ends in one system call: write three bytes, 2, 5, and a newline, to the screen. Then exit, and the kernel tears the process down." } ] },
   { name: "6 flags", scene: ch6, steps: [
