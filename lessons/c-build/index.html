@@ -483,9 +483,9 @@ function ch2(i) {
   }
   if (i === 5) {
     o.push(R("err1", 50, 170, 900, 84, "stamp"), T("err1a", 70, 204, "buggy.c:16:14: warning: format '%s' expects argument of type 'char *',", "mono t-red", 16), T("err1b", 70, 230, "    but argument 2 has type 'int' [-Wformat=]", "mono t-red", 16));
-    o.push(PA("ringLC", "err1a", 8, 13, "ring", "blue", 2), T("lcN", 70, 290, "file:line:col means the compiler is talking", "hand t-blue", 19));
+    o.push(PA("ringLC", "err1a", 8, 13, "ring", "blue", 2), T("lcN", 70, 290, "file:line:col points at the line in your code", "hand t-blue", 19));
     o.push(R("err2", 50, 330, 900, 60, "stamp"), T("err2a", 70, 366, "syn.c:2:2: error: expected ',' or ';' before 'return'", "mono t-red", 16));
-    o.push(T("lcN2", 70, 440, "every -W warning and every syntax or type error is born here", "hand t-blue", 19));
+    o.push(T("lcN2", 70, 440, "warnings like these, and syntax and type errors, are born here", "hand t-blue", 19));
   }
   return o;
 }
@@ -950,7 +950,7 @@ function showLab(S) {
   labbar.querySelectorAll(".flag").forEach((b) => b.remove());
   FLAGS.forEach(([k, f]) => { const b = document.createElement("button"); b.type = "button"; b.className = "flag"; b.textContent = f; b.setAttribute("aria-pressed", String(LAB[k])); b.addEventListener("click", () => onFlag(k)); labbar.appendChild(b); });
 }
-onFlag = (k) => { LAB[k] = !LAB[k]; render(scene(ch, st), true); labbar.querySelectorAll(".flag").forEach((b, j) => b.setAttribute("aria-pressed", String(LAB[FLAGS[j][0]]))); const n = labCaught(LAB).length; $("cap").textContent = `${n} of 6 caught. ` + CH[ch].steps[st].cap; };
+onFlag = (k) => { clearTimeout(capTimer); LAB[k] = !LAB[k]; render(scene(ch, st), true); labbar.querySelectorAll(".flag").forEach((b, j) => b.setAttribute("aria-pressed", String(LAB[FLAGS[j][0]]))); const n = labCaught(LAB).length; $("cap").textContent = `${n} of 6 caught. ` + CH[ch].steps[st].cap; };
 onStation = (i) => { if (i === ch) return; stop(); go(i, 0, true); };
 function advance() {
   const C = CH[ch];
