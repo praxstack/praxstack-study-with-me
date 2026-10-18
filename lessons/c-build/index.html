@@ -919,7 +919,7 @@ function go(c, s, animate) {
   $("next").disabled = last;
   if (fe && fe.disabled) (fe.id === "prev" ? $("next") : $("prev")).focus();
   showAsk(S); showLab(S);
-  speak(clipName(ch, st), afterClip);
+  speak(phase().clip, afterClip);
 }
 function showAsk(S) {
   const id = ch + ":" + st;
@@ -959,8 +959,13 @@ function advance() {
   else { stop(); return; }
   if (playing) schedule();
 }
-// What the learner is looking at now: the step, or the explanation of an answered question.
-function phase() { const S = CH[ch].steps[st], a = answered[ch + ":" + st]; return S.ask && a && a.done ? { clip: clipName(ch, st, "why"), text: S.ask.why } : { clip: clipName(ch, st), text: S.cap }; }
+// What the learner is looking at now: the step, the hint after a first wrong pick, or the explanation.
+function phase() {
+  const S = CH[ch].steps[st], a = answered[ch + ":" + st];
+  if (S.ask && a && a.done) return { clip: clipName(ch, st, "why"), text: S.ask.why };
+  if (S.ask && a && a.wrong != null) return { clip: clipName(ch, st, "hint"), text: "Not quite. " + S.ask.hint };
+  return { clip: clipName(ch, st), text: S.cap };
+}
 const readMs = () => 2600 + phase().text.length * 48;
 function schedule() {
   clearTimeout(timer);
