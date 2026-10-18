@@ -275,11 +275,11 @@ section { display: flex; flex-direction: column; gap: 14px }
 
   <section class="stage" aria-label="Stage board">
     <div class="toolbar">
-      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="tabs" role="tablist" aria-label="Chapters" id="tabs"></div>
       <div class="skins" role="group" aria-label="Look" id="skins"><span class="lbl">look:</span></div>
       <details class="more" id="more"><summary>30 more themes from the video kit</summary><div class="tgrid" id="tgrid"></div></details>
     </div>
-    <div class="board"><svg id="fig" viewBox="0 0 1000 600" role="img" aria-labelledby="figlabel"><title id="figlabel">Stage board</title><g id="layer"></g></svg></div>
+    <div class="board" id="panel" role="tabpanel"><svg id="fig" viewBox="0 0 1000 600" role="img" aria-labelledby="figlabel"><title id="figlabel">Stage board</title><g id="layer"></g></svg></div>
     <div class="capbar">
       <p class="cap" id="cap" aria-live="polite"></p>
       <div class="ask" id="ask" hidden>
@@ -901,19 +901,23 @@ const $ = (id) => document.getElementById(id);
 const tabs = $("tabs"), cap = $("cap"), dots = $("dots"), ask = $("ask"), askq = $("askq"), askopts = $("askopts"), askfb = $("askfb"), labbar = $("labbar"), fig = $("fig");
 let ch = 0, st = 0, playing = false, timer = 0, capTimer = 0;
 const answered = {};
-CH.forEach((c, j) => { const b = document.createElement("button"); b.className = "tab"; b.type = "button"; b.setAttribute("role", "tab"); b.id = "tab" + j; b.textContent = c.name; b.addEventListener("click", () => { stop(); go(j, 0, true); }); tabs.appendChild(b); });
+CH.forEach((c, j) => { const b = document.createElement("button"); b.className = "tab"; b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "panel"); b.id = "tab" + j; b.textContent = c.name; b.addEventListener("click", () => { stop(); go(j, 0, true); }); tabs.appendChild(b); });
 function go(c, s, animate) {
-  ch = c; st = s; const C = CH[ch], S = C.steps[st];
+  ch = c; st = s; const C = CH[ch], S = C.steps[st], fe = document.activeElement;
   render(scene(ch, st), animate);
-  [...tabs.children].forEach((b, j) => b.setAttribute("aria-selected", String(j === ch)));
+  [...tabs.children].forEach((b, j) => { b.setAttribute("aria-selected", String(j === ch)); b.tabIndex = j === ch ? 0 : -1; });
+  $("panel").setAttribute("aria-labelledby", "tab" + ch);
   cap.style.opacity = 0; clearTimeout(capTimer); capTimer = setTimeout(() => { cap.textContent = S.cap; cap.style.opacity = 1; }, animate && !reduce ? 160 : 0);
+  const dotFocus = dots.contains(document.activeElement);
   dots.innerHTML = "";
-  C.steps.forEach((x, j) => { const d = document.createElement("button"); d.type = "button"; d.className = "dot" + (j === st ? " on" : "") + (x.ask ? " q" : ""); d.setAttribute("aria-label", `step ${j + 1}${x.ask ? ", a question" : ""}${x.lab ? ", the flag lab" : ""}`); d.addEventListener("click", () => { stop(); go(ch, j, true); }); dots.appendChild(d); });
+  C.steps.forEach((x, j) => { const d = document.createElement("button"); d.type = "button"; d.className = "dot" + (j === st ? " on" : "") + (x.ask ? " q" : ""); d.setAttribute("aria-label", `step ${j + 1}${x.ask ? ", a question" : ""}${x.lab ? ", the flag lab" : ""}`); if (j === st) d.setAttribute("aria-current", "step"); d.addEventListener("click", () => { stop(); go(ch, j, true); }); dots.appendChild(d); });
+  if (dotFocus) dots.children[st].focus();
   $("where").textContent = `${st + 1} of ${C.steps.length}`;
   $("prev").disabled = ch === 0 && st === 0;
   const last = ch === CH.length - 1 && st === C.steps.length - 1;
   $("next").textContent = st === C.steps.length - 1 && !last ? "Next stop" : "Next";
   $("next").disabled = last;
+  if (fe && fe.disabled) (fe.id === "prev" ? $("next") : $("prev")).focus();
   showAsk(S); showLab(S);
   speak(clipName(ch, st), afterClip);
 }
@@ -925,14 +929,14 @@ function showAsk(S) {
   S.ask.opts.forEach((txt, j) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = txt; b.id = `opt-${ch}-${st}-${j}`; b.setAttribute("aria-pressed", "false");
     b.addEventListener("click", () => {
-      if (state.done) return;
+      if (state.done || j === state.wrong) return;
       state.tries++; b.setAttribute("aria-pressed", "true");
       let part;
       if (j === S.ask.ans) { b.classList.add("right"); state.done = true; askfb.hidden = false; askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; }
       else { b.classList.add("wrong"); state.wrong = j; askfb.hidden = false; if (state.tries >= 2) { state.done = true; askopts.children[S.ask.ans].classList.add("right"); askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; } else { askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; part = "hint"; } }
       answered[id] = state;
-      const next = () => { if (state.done && playing) timer = setTimeout(advance, 1200); };
-      if (!speak(clipName(ch, st, part), next)) { if (state.done && playing) timer = setTimeout(advance, 3200); }
+      const next = (failed) => { if (state.done && playing) { clearTimeout(timer); timer = setTimeout(advance, failed ? 2600 + askfb.textContent.length * 48 : 1200); } };
+      if (!speak(clipName(ch, st, part), next)) { if (state.done && playing) { clearTimeout(timer); timer = setTimeout(advance, 2600 + askfb.textContent.length * 48); } }
     });
     askopts.appendChild(b);
   });
@@ -966,7 +970,9 @@ function stop() { playing = false; clearTimeout(timer); $("play").textContent = 
 $("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { armed = true; playing = true; $("play").textContent = "Pause"; if (!speak(clipName(ch, st), afterClip)) schedule(); } });
 $("next").addEventListener("click", () => { stop(); advance(); });
 $("prev").addEventListener("click", () => { stop(); if (st > 0) go(ch, st - 1, false); else if (ch > 0) go(ch - 1, CH[ch - 1].steps.length - 1, false); });
-document.addEventListener("keydown", (e) => { armed = true; if (e.target.closest && e.target.closest("video, input, select, textarea")) return; if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; if (e.key === "ArrowRight") { stop(); advance(); } else if (e.key === "ArrowLeft") $("prev").click(); });
+document.addEventListener("keydown", (e) => { armed = true; if (e.altKey || e.ctrlKey || e.metaKey) return; if (e.target.closest && e.target.closest("video, input, select, textarea")) return;
+  if (e.target.closest && e.target.closest("#tabs")) { const ts = [...tabs.children], i = ts.indexOf(e.target), n = ts.length; const to = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[e.key]; if (to !== undefined && i >= 0) { e.preventDefault(); ts.forEach((b, j) => { b.tabIndex = j === to ? 0 : -1; }); ts[to].focus(); } return; }
+  if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; if (e.key === "ArrowRight") { stop(); advance(); } else if (e.key === "ArrowLeft") $("prev").click(); });
 document.addEventListener("pointerdown", () => { armed = true; }, true);
 
 /* sound toggle */
