@@ -881,20 +881,20 @@ if (FILM) window.__filmExport = { title: "Inside a C Build", scenes: SC.map((x) 
 /* ---------- voice: one clip per step, made with Kokoro (af_heart) ---------- */
 const VOICE = "voice/";
 const clipName = (c, s, part) => `${VOICE}c${c + 1}-s${String(s + 1).padStart(2, "0")}${part ? "-" + part : ""}.mp3`;
-let soundOn = true, armed = false, onClipEnd = null;
+let soundOn = true, armed = false, onClipEnd = null, clipReq = 0;
 const audio = FILM ? null : new Audio();
 try { const v = localStorage.getItem("cbuild-sound"); if (v === "off") soundOn = false; } catch (e) { /* storage blocked: keep default */ }
 if (audio) { audio.preload = "auto"; audio.addEventListener("ended", () => { const f = onClipEnd; onClipEnd = null; if (f) f(); }); audio.addEventListener("error", () => { const f = onClipEnd; onClipEnd = null; if (f) f(true); }); }
 function speak(src, done) {
   if (!audio) return false;
-  audio.pause(); onClipEnd = null;
+  const req = ++clipReq; audio.pause(); onClipEnd = null;
   if (!soundOn || !armed) return false;
   const fv = document.getElementById("film"); if (fv && !fv.paused) fv.pause();
   onClipEnd = done || null; audio.src = src; audio.currentTime = 0;
-  const p = audio.play(); if (p && p.catch) p.catch(() => { const f = onClipEnd; onClipEnd = null; if (f) f(true); });
+  const p = audio.play(); if (p && p.catch) p.catch(() => { if (req !== clipReq) return; const f = onClipEnd; onClipEnd = null; if (f) f(true); });
   return true;
 }
-function hush() { if (audio) { audio.pause(); onClipEnd = null; } }
+function hush() { if (audio) { clipReq++; audio.pause(); onClipEnd = null; } }
 
 /* ---------- UI ---------- */
 const $ = (id) => document.getElementById(id);
@@ -925,12 +925,12 @@ function showAsk(S) {
   const id = ch + ":" + st;
   if (!S.ask) { ask.hidden = true; return; }
   ask.hidden = false; askq.textContent = S.ask.q; askopts.innerHTML = ""; askfb.hidden = true; askfb.className = "fb";
-  const state = answered[id] || { tries: 0, done: false };
+  const state = answered[id] || { tries: 0, done: false, picked: [] };
   S.ask.opts.forEach((txt, j) => {
     const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = txt; b.id = `opt-${ch}-${st}-${j}`; b.setAttribute("aria-pressed", "false");
     b.addEventListener("click", () => {
       if (state.done || j === state.wrong) return;
-      state.tries++; b.setAttribute("aria-pressed", "true");
+      state.tries++; state.picked.push(j); b.setAttribute("aria-pressed", "true");
       let part;
       if (j === S.ask.ans) { b.classList.add("right"); state.done = true; askfb.hidden = false; askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; }
       else { b.classList.add("wrong"); state.wrong = j; askfb.hidden = false; if (state.tries >= 2) { state.done = true; askopts.children[S.ask.ans].classList.add("right"); askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; } else { askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; part = "hint"; } }
@@ -940,6 +940,7 @@ function showAsk(S) {
     });
     askopts.appendChild(b);
   });
+  state.picked.forEach((j) => { const o = askopts.children[j]; o.setAttribute("aria-pressed", "true"); if (j !== S.ask.ans) o.classList.add("wrong"); });
   if (state.done) { askopts.children[S.ask.ans].classList.add("right"); askfb.hidden = false; askfb.className = "fb why"; askfb.textContent = S.ask.why; }
   else if (state.wrong != null) { const w = askopts.children[state.wrong]; w.classList.add("wrong"); w.setAttribute("aria-pressed", "true"); askfb.hidden = false; askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; }
 }
