@@ -985,14 +985,14 @@ SKINS.forEach(([k, name]) => { const b = document.createElement("button"); b.typ
 // Films: one narrated MP4 per look, served next to the page.
 const FILMS = [["", "Notebook", "notebook"], ["blueprint", "Blueprint", "blueprint"], ["tokyo", "Tokyo Night", "tokyo"], ["t-catppuccin-mocha", "Catppuccin Mocha", "catppuccin-mocha"], ["t-gruvbox-hard", "Gruvbox Hard dark", "gruvbox-hard"], ["t-rosepine-dawn", "Rosé Pine Dawn", "rosepine-dawn"], ["t-nord-polar", "Nord Polar Night", "nord-polar"], ["t-kanagawa-wave", "Kanagawa Wave", "kanagawa-wave"]];
 const FILMS_READY = new Set(["notebook", "blueprint", "tokyo"]);
-let filmK = null;
+let filmK = null, capURL = null;
 function setFilm(k, why) {
   const f = FILMS.find((x) => x[0] === k) || FILMS[0], v = $("film");
   if (filmK === f[0]) return; filmK = f[0];
   v.pause(); v.textContent = ""; v.src = `films/c-build-${f[2]}.mp4`; v.poster = `films/c-build-${f[2]}.jpg`;
   const t = document.createElement("track"); t.kind = "captions"; t.label = "English"; t.srclang = "en"; v.appendChild(t);
-  // captions ship as .txt (the host serves no .vtt), so hand the track a text/vtt blob
-  fetch(`films/c-build-${f[2]}.vtt.txt`).then((r) => r.ok ? r.text() : Promise.reject()).then((txt) => { if (filmK === f[0]) t.src = URL.createObjectURL(new Blob([txt], { type: "text/vtt" })); }).catch(() => { /* no captions */ });
+  // captions ship as .vtt.txt (some hosts refuse .vtt), so hand the track a text/vtt blob
+  fetch(`films/c-build-${f[2]}.vtt.txt`).then((r) => r.ok ? r.text() : Promise.reject()).then((txt) => { if (filmK === f[0]) { if (capURL) URL.revokeObjectURL(capURL); capURL = URL.createObjectURL(new Blob([txt], { type: "text/vtt" })); t.src = capURL; } }).catch(() => { /* no captions */ });
   document.querySelectorAll("#filmpick .skin").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === f[0])));
   $("filmnote").textContent = why || `Playing the ${f[1]} film.`;
 }

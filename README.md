@@ -18,7 +18,7 @@ No build step: Vercel serves the folder as it is.
 
 ## Where lessons come from
 
-Lessons are drafted in the private `kai-mori-tutor` workspace with the teacher engine and video skills, and land here only when finished. A lesson can later be copied into the paid course product; code is never copied between repos, only lesson files.
+Lessons are drafted in a private workspace with the teacher engine and video skills, and land here only when finished. A lesson can later be copied into the paid course product; code is never copied between repos, only lesson files.
 
 ## Adding a lesson
 

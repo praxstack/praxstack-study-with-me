@@ -2,7 +2,7 @@
   "cleanUrls": true,
   "trailingSlash": true,
   "headers": [
-    { "source": "/lessons/(.*)/films/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] },
-    { "source": "/lessons/(.*)/voice/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }] }
+    { "source": "/lessons/(.*)/films/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }] },
+    { "source": "/lessons/(.*)/voice/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }] }
   ]
 }
