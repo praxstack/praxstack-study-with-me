@@ -179,6 +179,7 @@ code { font-family: var(--font-print); font-size: .92em }
 .skin:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px }
 .labbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
 .labbar .lbl { font-family: var(--font-hand); color: var(--red); font-size: 1.1rem }
+.labbar .getsrc { font-family: var(--font-hand); color: var(--blue); font-size: 1.05rem; margin-left: auto }
 .flag { font-family: var(--font-print); font-size: .95rem; border: 1.5px solid var(--rule); background: var(--card); color: var(--ink); border-radius: 4px; padding: 6px 12px; cursor: pointer }
 .flag[aria-pressed="true"] { border-color: var(--ink); background: var(--highlight) }
 .flag:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px }
@@ -287,7 +288,7 @@ section { display: flex; flex-direction: column; gap: 14px }
         <div class="opts" id="askopts"></div>
         <div class="fb" id="askfb" role="status" aria-live="polite" hidden></div>
       </div>
-      <div class="labbar" id="labbar" role="group" aria-label="Compiler flags" hidden><span class="lbl">flags:</span></div>
+      <div class="labbar" id="labbar" role="group" aria-label="Compiler flags" hidden><span class="lbl">flags:</span><a class="getsrc" id="getsrc" href="demo/buggy.c" download>get buggy.c to try it yourself</a></div>
       <div class="ctrl">
         <button class="btn" id="prev" type="button">Back</button>
         <button class="btn" id="play" type="button">Play</button>
@@ -584,10 +585,10 @@ function ch5(i) {
 }
 
 /* ---------- chapter 6: flags ---------- */
-const BUG = ["int sum(int *a, int n) {", "    int total;", "    for (int i = 0; i < n; i++)", "        total += a[i];", "    return total;", "}", "int main(int argc, char **argv) {", "    int a[3] = {1, 2, 3};", "    unsigned int len = 3;", "    if (len > -1) ...", "    int x = 3.9;", '    printf("%s\\n", x);', "    if (x = 4) ...", "}"];
+const BUG = ["int sum(int *a, int n) {", "    int total;", "    for (int i = 0; i < n; i++)", "        total += a[i];", "    return total;", "}", "int main(int argc, char **argv) {", "    int a[3] = {1, 2, 3};", "    unsigned int len = 3;", "    if (len > -1) ...", "    int x = 3.9;", '    printf("%s\\n", x);', '    if (x = 4) printf("sum=%d\\n", sum(a, 3));', "}"];
 const TAG = { A: 1, B: 6, C: 9, D: 10, E: 11, F: 12 };
 const CAUGHT = [["E"], ["E", "F"], ["E", "F", "C", "B"], ["E", "F", "C", "B", "D"], ["E", "F", "C", "B", "D"], ["E", "F", "C", "B", "D", "A"]];
-const WNAME = { E: "-Wformat", F: "-Wparentheses", C: "-Wsign-compare", B: "-Wunused-parameter", D: "-Wfloat-conversion", A: "-Wuninitialized" };
+const WNAME = { E: "-Wformat", F: "-Wparentheses", C: "-Wsign-compare", B: "-Wunused-parameter", D: "-Wfloat-conversion", A: "-Wuninitialized/-Wmaybe-uninitialized" };
 const SPEED = [["-O0", 2658], ["-Og", 1177], ["-O1", 1042], ["-O2", 1057], ["-O3", 1054], ["-Os", 3445]];
 /* The flag lab. Rules read off all 16 real runs of gcc 13.3 -c buggy.c with these four flags on or off. */
 const FLAGS = [["wall", "-Wall"], ["wextra", "-Wextra"], ["wconv", "-Wconversion"], ["o2", "-O2"]];
@@ -888,8 +889,8 @@ if (audio) { audio.preload = "auto"; audio.addEventListener("ended", () => { con
 function speak(src, done) {
   if (!audio) return false;
   const req = ++clipReq; audio.pause(); onClipEnd = null;
+  const fv = document.getElementById("film"); if (fv && !fv.paused) fv.pause(); // the stage takes over even when muted
   if (!soundOn || !armed) return false;
-  const fv = document.getElementById("film"); if (fv && !fv.paused) fv.pause();
   onClipEnd = done || null; audio.src = src; audio.currentTime = 0;
   const p = audio.play(); if (p && p.catch) p.catch(() => { if (req !== clipReq) return; const f = onClipEnd; onClipEnd = null; if (f) f(true); });
   return true;
@@ -948,7 +949,7 @@ function showLab(S) {
   if (!S.lab) { labbar.hidden = true; return; }
   labbar.hidden = false;
   labbar.querySelectorAll(".flag").forEach((b) => b.remove());
-  FLAGS.forEach(([k, f]) => { const b = document.createElement("button"); b.type = "button"; b.className = "flag"; b.textContent = f; b.setAttribute("aria-pressed", String(LAB[k])); b.addEventListener("click", () => onFlag(k)); labbar.appendChild(b); });
+  FLAGS.forEach(([k, f]) => { const b = document.createElement("button"); b.type = "button"; b.className = "flag"; b.textContent = f; b.setAttribute("aria-pressed", String(LAB[k])); b.addEventListener("click", () => onFlag(k)); labbar.insertBefore(b, $("getsrc")); });
 }
 onFlag = (k) => { clearTimeout(capTimer); LAB[k] = !LAB[k]; render(scene(ch, st), true); labbar.querySelectorAll(".flag").forEach((b, j) => b.setAttribute("aria-pressed", String(LAB[FLAGS[j][0]]))); const n = labCaught(LAB).length; $("cap").textContent = `${n} of 6 caught. ` + CH[ch].steps[st].cap; };
 onStation = (i) => { if (i === ch) return; stop(); go(i, 0, true); };
