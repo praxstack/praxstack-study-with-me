@@ -285,7 +285,7 @@ section { display: flex; flex-direction: column; gap: 14px }
       <div class="ask" id="ask" hidden>
         <div class="q" id="askq"></div>
         <div class="opts" id="askopts"></div>
-        <div class="fb" id="askfb" hidden></div>
+        <div class="fb" id="askfb" role="status" aria-live="polite" hidden></div>
       </div>
       <div class="labbar" id="labbar" role="group" aria-label="Compiler flags" hidden><span class="lbl">flags:</span></div>
       <div class="ctrl">
@@ -683,8 +683,8 @@ const CH = [
       say: "Out comes assembly. The 5 moves into register E D I, where x 86 64 passes the first argument. The call names square, with no address." },
     { cap: "Optimisation happens here too. At -O0, x takes a trip to memory and back. At -O2 it stays in a register: 3 instructions instead of 7.",
       say: "Optimisation happens here too. At O zero, x takes a trip to memory and back. At O 2, it stays in a register: three instructions instead of seven." },
-    { cap: "Every warning and syntax error comes from this stop. You can tell because they start with file:line:col.",
-      say: "Every warning and syntax error comes from this stop. You can tell, because they start with file, line, and column." } ] },
+    { cap: "Syntax errors and type warnings, like the ones you'll meet in the flag lab, come from this stop. Each points at file:line:col in your code.",
+      say: "Syntax errors and type warnings, like the ones you'll meet in the flag lab, come from this stop. Each one points at the file, line, and column in your code." } ] },
   { name: "3 assemble", scene: ch3, steps: [
     { cap: "The assembler, as, turns each instruction into bytes. movl $5, %edi becomes bf 05 00 00 00.",
       say: "The assembler, A S, turns each instruction into bytes. Move 5 into E D I becomes the bytes B F, zero 5, then three zero bytes." },
@@ -923,13 +923,13 @@ function showAsk(S) {
   ask.hidden = false; askq.textContent = S.ask.q; askopts.innerHTML = ""; askfb.hidden = true; askfb.className = "fb";
   const state = answered[id] || { tries: 0, done: false };
   S.ask.opts.forEach((txt, j) => {
-    const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = txt; b.id = `opt-${ch}-${st}-${j}`;
+    const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = txt; b.id = `opt-${ch}-${st}-${j}`; b.setAttribute("aria-pressed", "false");
     b.addEventListener("click", () => {
       if (state.done) return;
-      state.tries++;
+      state.tries++; b.setAttribute("aria-pressed", "true");
       let part;
       if (j === S.ask.ans) { b.classList.add("right"); state.done = true; askfb.hidden = false; askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; }
-      else { b.classList.add("wrong"); askfb.hidden = false; if (state.tries >= 2) { state.done = true; askopts.children[S.ask.ans].classList.add("right"); askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; } else { askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; part = "hint"; } }
+      else { b.classList.add("wrong"); state.wrong = j; askfb.hidden = false; if (state.tries >= 2) { state.done = true; askopts.children[S.ask.ans].classList.add("right"); askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; } else { askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; part = "hint"; } }
       answered[id] = state;
       const next = () => { if (state.done && playing) timer = setTimeout(advance, 1200); };
       if (!speak(clipName(ch, st, part), next)) { if (state.done && playing) timer = setTimeout(advance, 3200); }
@@ -937,6 +937,7 @@ function showAsk(S) {
     askopts.appendChild(b);
   });
   if (state.done) { askopts.children[S.ask.ans].classList.add("right"); askfb.hidden = false; askfb.className = "fb why"; askfb.textContent = S.ask.why; }
+  else if (state.wrong != null) { const w = askopts.children[state.wrong]; w.classList.add("wrong"); w.setAttribute("aria-pressed", "true"); askfb.hidden = false; askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; }
 }
 function showLab(S) {
   if (!S.lab) { labbar.hidden = true; return; }
@@ -1012,7 +1013,7 @@ fig.addEventListener("pointermove", (e) => { fig.classList.toggle("hot", !!hit(b
 window.__cbuild = { CH, go, render, LAB, setSkin };
 if (!FILM) {
   go(0, 0, false);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => go(ch, st, false));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => render(scene(ch, st), false));
 }
 })();
 </script>
