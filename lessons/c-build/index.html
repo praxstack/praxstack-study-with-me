@@ -959,16 +959,19 @@ function advance() {
   else { stop(); return; }
   if (playing) schedule();
 }
+// What the learner is looking at now: the step, or the explanation of an answered question.
+function phase() { const S = CH[ch].steps[st], a = answered[ch + ":" + st]; return S.ask && a && a.done ? { clip: clipName(ch, st, "why"), text: S.ask.why } : { clip: clipName(ch, st), text: S.cap }; }
+const readMs = () => 2600 + phase().text.length * 48;
 function schedule() {
   clearTimeout(timer);
   const S = CH[ch].steps[st];
   if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return;
   if (soundOn && armed && audio && !audio.paused) return; // the clip's end moves us on
-  timer = setTimeout(advance, 2600 + S.cap.length * 48);
+  timer = setTimeout(advance, readMs());
 }
-function afterClip(failed) { if (!playing) return; const S = CH[ch].steps[st]; if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return; clearTimeout(timer); timer = setTimeout(advance, failed ? 2600 + S.cap.length * 48 : 900); }
+function afterClip(failed) { if (!playing) return; const S = CH[ch].steps[st]; if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return; clearTimeout(timer); timer = setTimeout(advance, failed ? readMs() : 900); }
 function stop() { playing = false; clearTimeout(timer); $("play").textContent = "Play"; }
-$("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { armed = true; playing = true; $("play").textContent = "Pause"; if (!speak(clipName(ch, st), afterClip)) schedule(); } });
+$("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { armed = true; playing = true; $("play").textContent = "Pause"; if (!speak(phase().clip, afterClip)) schedule(); } });
 $("next").addEventListener("click", () => { stop(); advance(); });
 $("prev").addEventListener("click", () => { stop(); if (st > 0) go(ch, st - 1, false); else if (ch > 0) go(ch - 1, CH[ch - 1].steps.length - 1, false); });
 document.addEventListener("keydown", (e) => { armed = true; if (e.altKey || e.ctrlKey || e.metaKey) return; if (e.target.closest && e.target.closest("video, input, select, textarea")) return;
@@ -979,7 +982,7 @@ document.addEventListener("pointerdown", () => { armed = true; }, true);
 /* sound toggle */
 function setSound(on) { soundOn = on; const b = $("snd"); b.setAttribute("aria-pressed", String(on)); $("sndt").textContent = on ? "Sound on" : "Sound off"; try { localStorage.setItem("cbuild-sound", on ? "on" : "off"); } catch (e) { /* ignore */ } }
 setSound(soundOn);
-$("snd").addEventListener("click", () => { setSound(!soundOn); if (soundOn) { armed = true; clearTimeout(timer); if (!speak(clipName(ch, st), afterClip) && playing) schedule(); } else { hush(); if (playing) schedule(); } });
+$("snd").addEventListener("click", () => { setSound(!soundOn); if (soundOn) { armed = true; clearTimeout(timer); if (!speak(phase().clip, afterClip) && playing) schedule(); } else { hush(); if (playing) schedule(); } });
 
 /* looks */
 const SKINS = [["", "Notebook"], ["chalk", "Chalkboard"], ["blueprint", "Blueprint"], ["tokyo", "Tokyo Night"], ["terminal", "Terminal"]];
