@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Study with Prax</title>
+<meta name="description" content="A public study log: each finished lesson is a board you can step through, a voice that reads it, and a narrated film.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime&family=Kalam:wght@400;700&family=Vollkorn:ital,wght@0,400;0,600;0,800;1,400&display=swap">
+<style>
+:root {
+  --paper: oklch(98.4% 0.008 95); --card: oklch(99.3% 0.004 95);
+  --grid: oklch(86% 0.045 235 / 0.4); --margin: oklch(70% 0.12 15);
+  --ink: oklch(23% 0.025 265); --ink-2: oklch(40% 0.02 265); --rule: oklch(80% 0.012 260);
+  --red: oklch(54% 0.2 27); --blue: oklch(44% 0.17 264); --highlight: oklch(91% 0.15 102); --shadow: oklch(23% 0.025 265 / 0.14);
+  --font-book: "Vollkorn", "Iowan Old Style", Georgia, serif;
+  --font-hand: "Kalam", "Segoe Print", "Bradley Hand", cursive;
+  --font-print: "Courier Prime", "Courier New", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: oklch(27% 0.025 165); --card: oklch(30% 0.022 165);
+  --grid: oklch(60% 0.02 165 / 0.14); --margin: oklch(70% 0.12 15 / 0.55);
+  --ink: oklch(95% 0.01 95); --ink-2: oklch(84% 0.012 95); --rule: oklch(50% 0.02 165);
+  --red: oklch(76% 0.13 25); --blue: oklch(82% 0.09 240); --highlight: oklch(86% 0.14 100 / 0.38); --shadow: oklch(0% 0 0 / 0.35); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: oklch(27% 0.025 165); --card: oklch(30% 0.022 165);
+  --grid: oklch(60% 0.02 165 / 0.14); --margin: oklch(70% 0.12 15 / 0.55);
+  --ink: oklch(95% 0.01 95); --ink-2: oklch(84% 0.012 95); --rule: oklch(50% 0.02 165);
+  --red: oklch(76% 0.13 25); --blue: oklch(82% 0.09 240); --highlight: oklch(86% 0.14 100 / 0.38); --shadow: oklch(0% 0 0 / 0.35); color-scheme: dark }
+* { box-sizing: border-box }
+html { background: var(--paper) }
+body {
+  margin: 0; min-height: 100vh; background-color: var(--paper); color: var(--ink); font-family: var(--font-book); font-size: 1.125rem; line-height: 1.6; font-variant-numeric: lining-nums;
+  background-image:
+    linear-gradient(90deg, transparent 39px, var(--margin) 39px, var(--margin) 40px, transparent 40px, transparent 43px, var(--margin) 43px, var(--margin) 44px, transparent 44px),
+    linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 100% 100%, 26px 26px, 26px 26px;
+}
+.wrap { max-width: 900px; margin: 0 auto; padding: 48px 16px 80px 64px; display: flex; flex-direction: column; gap: 28px }
+@media (max-width: 600px) { .wrap { padding-left: 56px; padding-right: 16px } }
+.kicker { font-family: var(--font-hand); color: var(--red); font-size: 1.25rem; margin: 0; transform: rotate(-1.5deg); transform-origin: left }
+h1 { font-size: clamp(2.4rem, 1.4rem + 4vw, 4rem); font-weight: 800; line-height: 1.05; margin: 0 }
+h1 mark { background: linear-gradient(transparent 52%, var(--highlight) 52%, var(--highlight) 90%, transparent 90%); color: inherit; padding: 0 .1em }
+.lede { color: var(--ink-2); font-size: 1.2rem; margin: 0; max-width: 62ch }
+h2 { font-family: var(--font-hand); font-weight: 700; font-size: 1.5rem; margin: 8px 0 -8px }
+.lessons { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px }
+.card { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0; background: var(--card); border: 1.5px solid var(--rule); border-radius: 8px; overflow: hidden; color: inherit; text-decoration: none; box-shadow: 0 6px 18px -10px var(--shadow); transition: transform .15s ease, box-shadow .15s ease }
+.card:hover, .card:focus-visible { transform: translateY(-2px) rotate(-.3deg); box-shadow: 0 12px 26px -12px var(--shadow) }
+.card:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px }
+.card img { width: 100%; height: 100%; object-fit: cover; display: block; aspect-ratio: 16 / 9 }
+.card .txt { padding: 18px 20px; display: flex; flex-direction: column; gap: 8px }
+.num { font-family: var(--font-print); font-size: .8rem; color: var(--ink-2); letter-spacing: .08em }
+.card h3 { margin: 0; font-size: 1.6rem; line-height: 1.15 }
+.card p { margin: 0; color: var(--ink-2); font-size: 1rem }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px }
+.meta span { font-family: var(--font-print); font-size: .78rem; border: 1.2px solid var(--rule); border-radius: 999px; padding: 2px 9px }
+@media (max-width: 680px) { .card { grid-template-columns: 1fr } }
+.soon { font-family: var(--font-hand); color: var(--ink-2); font-size: 1.15rem; margin: 0 }
+footer { font-family: var(--font-print); font-size: .8rem; color: var(--ink-2); border-top: 1.5px dashed var(--rule); padding-top: 14px }
+footer a { color: inherit }
+@media (prefers-reduced-motion: reduce) { .card { transition: none } .card:hover { transform: none } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:14px">
+    <p class="kicker">a public study log</p>
+    <h1>Study <mark>with</mark> Prax</h1>
+    <p class="lede">Every lesson I finish lands here. Each one is a board you can step through, a voice that reads it, little predict-first questions, and a narrated film of the whole thing.</p>
+  </header>
+
+  <section aria-labelledby="l-h" style="display:flex;flex-direction:column;gap:22px">
+    <h2 id="l-h">Lessons</h2>
+    <ul class="lessons">
+      <li>
+        <a class="card" href="/lessons/c-build/">
+          <img src="/lessons/c-build/cover.jpg" alt="The C build board: main.c, square.h and stdio.h on the copier's desk" width="1280" height="720" loading="lazy">
+          <div class="txt">
+            <span class="num">LESSON 01</span>
+            <h3>Inside a C Build</h3>
+            <p>Two tiny files followed through cpp, cc1, as, ld and ld.so until the screen says 25. Plus a GCC flag lab: which warning catches which bug.</p>
+            <div class="meta"><span>C</span><span>gcc 13.3</span><span>linker</span><span>8 min film</span><span>6 chapters</span></div>
+          </div>
+        </a>
+      </li>
+    </ul>
+    <p class="soon">More lessons land here as I finish them.</p>
+  </section>
+
+  <footer>Built with the Kai Mori teacher engine. Every byte and address on the boards came from a real run.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Two tiny C files followed through cpp, cc1, as, ld and ld.so, with a voiced step-through board, a GCC flag lab and narrated films.">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Inside a C Build</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Courier+Prime&family=Kalam:wght@400;700&family=Vollkorn:ital,wght@0,400;0,600;0,800;1,400&display=swap">
+<style>
+/* Layout: one notebook sheet. A stage board (the figure) drives the lesson; text is captions only. Lesson-notebook tokens from the Kai Mori teacher engine. */
+:root {
+  --paper: oklch(98.4% 0.008 95); --paper-2: oklch(96.5% 0.014 88); --card: oklch(99.3% 0.004 95);
+  --grid: oklch(86% 0.045 235 / 0.4); --margin: oklch(70% 0.12 15);
+  --ink: oklch(23% 0.025 265); --ink-2: oklch(40% 0.02 265); --rule: oklch(80% 0.012 260); --rule-soft: oklch(88% 0.01 260);
+  --graphite: oklch(46% 0.006 270); --red: oklch(54% 0.2 27); --red-soft: oklch(94% 0.04 27);
+  --blue: oklch(44% 0.17 264); --blue-soft: oklch(94% 0.03 264); --green: oklch(48% 0.12 150); --green-soft: oklch(94% 0.04 150);
+  --highlight: oklch(91% 0.15 102); --on-blue: oklch(99% 0.004 95); --shadow: oklch(23% 0.025 265 / 0.18); --hl-blend: multiply;
+  --font-book: "Vollkorn", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-hand: "Kalam", "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --font-print: "Courier Prime", "Courier New", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: oklch(27% 0.025 165); --paper-2: oklch(31% 0.025 165); --card: oklch(30% 0.022 165);
+  --grid: oklch(60% 0.02 165 / 0.14); --margin: oklch(70% 0.12 15 / 0.55);
+  --ink: oklch(95% 0.01 95); --ink-2: oklch(84% 0.012 95); --rule: oklch(50% 0.02 165); --rule-soft: oklch(40% 0.02 165);
+  --graphite: oklch(80% 0.01 95); --red: oklch(76% 0.13 25); --red-soft: oklch(36% 0.05 25);
+  --blue: oklch(82% 0.09 240); --blue-soft: oklch(35% 0.04 240); --green: oklch(84% 0.12 150); --green-soft: oklch(34% 0.04 150);
+  --highlight: oklch(86% 0.14 100 / 0.38); --on-blue: oklch(22% 0.02 165); --shadow: oklch(0% 0 0 / 0.35); --hl-blend: screen; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: oklch(27% 0.025 165); --paper-2: oklch(31% 0.025 165); --card: oklch(30% 0.022 165);
+  --grid: oklch(60% 0.02 165 / 0.14); --margin: oklch(70% 0.12 15 / 0.55);
+  --ink: oklch(95% 0.01 95); --ink-2: oklch(84% 0.012 95); --rule: oklch(50% 0.02 165); --rule-soft: oklch(40% 0.02 165);
+  --graphite: oklch(80% 0.01 95); --red: oklch(76% 0.13 25); --red-soft: oklch(36% 0.05 25);
+  --blue: oklch(82% 0.09 240); --blue-soft: oklch(35% 0.04 240); --green: oklch(84% 0.12 150); --green-soft: oklch(34% 0.04 150);
+  --highlight: oklch(86% 0.14 100 / 0.38); --on-blue: oklch(22% 0.02 165); --shadow: oklch(0% 0 0 / 0.35); --hl-blend: screen; color-scheme: dark }
+
+/* Looks the viewer can switch between. "notebook" (no data-skin) follows the system: paper by day, chalkboard by night. */
+:root[data-skin="paper"] {
+  --paper: oklch(98.4% 0.008 95); --paper-2: oklch(96.5% 0.014 88); --card: oklch(99.3% 0.004 95);
+  --grid: oklch(86% 0.045 235 / 0.4); --margin: oklch(70% 0.12 15);
+  --ink: oklch(23% 0.025 265); --ink-2: oklch(40% 0.02 265); --rule: oklch(80% 0.012 260); --rule-soft: oklch(88% 0.01 260);
+  --graphite: oklch(46% 0.006 270); --red: oklch(54% 0.2 27); --red-soft: oklch(94% 0.04 27);
+  --blue: oklch(44% 0.17 264); --blue-soft: oklch(94% 0.03 264); --green: oklch(48% 0.12 150); --green-soft: oklch(94% 0.04 150);
+  --highlight: oklch(91% 0.15 102); --on-blue: oklch(99% 0.004 95); --shadow: oklch(23% 0.025 265 / 0.18); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="chalk"] {
+  --paper: oklch(27% 0.025 165); --paper-2: oklch(31% 0.025 165); --card: oklch(30% 0.022 165);
+  --grid: oklch(60% 0.02 165 / 0.14); --margin: oklch(70% 0.12 15 / 0.55);
+  --ink: oklch(95% 0.01 95); --ink-2: oklch(84% 0.012 95); --rule: oklch(50% 0.02 165); --rule-soft: oklch(40% 0.02 165);
+  --graphite: oklch(80% 0.01 95); --red: oklch(76% 0.13 25); --red-soft: oklch(36% 0.05 25);
+  --blue: oklch(82% 0.09 240); --blue-soft: oklch(35% 0.04 240); --green: oklch(84% 0.12 150); --green-soft: oklch(34% 0.04 150);
+  --highlight: oklch(86% 0.14 100 / 0.38); --on-blue: oklch(22% 0.02 165); --shadow: oklch(0% 0 0 / 0.35); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="blueprint"] {
+  --paper: #14457E; --paper-2: #174A86; --card: #1A4F8E; --grid: rgb(234 243 255 / 0.08); --margin: transparent;
+  --ink: #EAF3FF; --ink-2: #D2E4F8; --rule: #3D6AA3; --rule-soft: #2E5D96; --graphite: #BCD5F2;
+  --red: #FFB4A6; --red-soft: #3A4A78; --blue: #7FF0E0; --blue-soft: #1F5A6E; --green: #A6F0A6; --green-soft: #1F5A6E;
+  --highlight: rgb(255 226 122 / 0.34); --on-blue: #14457E; --shadow: rgb(0 0 0 / 0.35); --hl-blend: screen; color-scheme: dark;
+  --font-hand: "Architects Daughter", "Patrick Hand", "Kalam", cursive }
+:root[data-skin="tokyo"] {
+  --paper: #1a1b26; --paper-2: #1f2335; --card: #24283b; --grid: rgb(122 162 247 / 0.07); --margin: rgb(247 118 142 / 0.35);
+  --ink: #c0caf5; --ink-2: #a9b1d6; --rule: #414868; --rule-soft: #2f3549; --graphite: #9aa5ce;
+  --red: #f7768e; --red-soft: #3b2433; --blue: #7aa2f7; --blue-soft: #283457; --green: #9ece6a; --green-soft: #26331f;
+  --highlight: rgb(224 175 104 / 0.32); --on-blue: #1a1b26; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="terminal"] {
+  --paper: #0b100c; --paper-2: #101a12; --card: #0f1611; --grid: rgb(80 255 120 / 0.05); --margin: transparent;
+  --ink: #b8f5c4; --ink-2: #93d9a4; --rule: #2f6239; --rule-soft: #1d3a24; --graphite: #84c493;
+  --red: #ff8a7a; --red-soft: #3a1a17; --blue: #7fd8ff; --blue-soft: #10303a; --green: #6dff8f; --green-soft: #133a1d;
+  --highlight: rgb(255 214 102 / 0.28); --on-blue: #0b100c; --shadow: rgb(0 0 0 / 0.5); --hl-blend: screen; color-scheme: dark;
+  --font-book: "Courier Prime", "Courier New", ui-monospace, monospace }
+/* THEMES:BEGIN */
+:root[data-skin="t-pastel-cream"] { --paper: #FFF7F0; --paper-2: color-mix(in oklab, #F6EBE2 60%, #FFF7F0); --card: #F6EBE2; --grid: color-mix(in srgb, #E6D6CB 45%, transparent); --margin: color-mix(in srgb, #D2557A 45%, transparent); --ink: #3b3245; --ink-2: color-mix(in oklab, #3b3245 70%, #6e6378); --rule: #E6D6CB; --rule-soft: color-mix(in oklab, #E6D6CB 55%, #F6EBE2); --graphite: #6e6378; --red: #a84462; --red-soft: color-mix(in oklab, #D2557A 18%, #F6EBE2); --blue: #5261b5; --blue-soft: color-mix(in oklab, #5B6CC9 16%, #F6EBE2); --green: #2e765e; --green-soft: color-mix(in oklab, #3E9E7E 18%, #F6EBE2); --highlight: color-mix(in oklab, #E0A43A 42%, #F6EBE2); --on-blue: #FFF7F0; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-pastel-lavender"] { --paper: #E9E4F5; --paper-2: color-mix(in oklab, #DED7EE 60%, #E9E4F5); --card: #DED7EE; --grid: color-mix(in srgb, #C9C0E0 45%, transparent); --margin: color-mix(in srgb, #C2457A 45%, transparent); --ink: #2f2a45; --ink-2: color-mix(in oklab, #2f2a45 70%, #5f5975); --rule: #C9C0E0; --rule-soft: color-mix(in oklab, #C9C0E0 55%, #DED7EE); --graphite: #5f5975; --red: #9b3762; --red-soft: color-mix(in oklab, #C2457A 18%, #DED7EE); --blue: #4c56a6; --blue-soft: color-mix(in oklab, #5560B8 16%, #DED7EE); --green: #236850; --green-soft: color-mix(in oklab, #2F8A6B 18%, #DED7EE); --highlight: color-mix(in oklab, #B9862A 42%, #DED7EE); --on-blue: #E9E4F5; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-pastel-night"] { --paper: #2B2738; --paper-2: color-mix(in oklab, #353046 60%, #2B2738); --card: #353046; --grid: color-mix(in srgb, #4A4460 45%, transparent); --margin: color-mix(in srgb, #F6A6C1 45%, transparent); --ink: #f2eaf7; --ink-2: color-mix(in oklab, #f2eaf7 70%, #b9afc8); --rule: #4A4460; --rule-soft: color-mix(in oklab, #4A4460 55%, #353046); --graphite: #b9afc8; --red: #f6a6c1; --red-soft: color-mix(in oklab, #F6A6C1 18%, #353046); --blue: #a9b8ff; --blue-soft: color-mix(in oklab, #A9B8FF 16%, #353046); --green: #9fe2c4; --green-soft: color-mix(in oklab, #9FE2C4 18%, #353046); --highlight: color-mix(in srgb, #FFE3A3 38%, transparent); --on-blue: #2B2738; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-tokyonight-day"] { --paper: #E1E2E7; --paper-2: color-mix(in oklab, #D0D5E3 60%, #E1E2E7); --card: #D0D5E3; --grid: color-mix(in srgb, #C4C8DA 45%, transparent); --margin: color-mix(in srgb, #F52A65 45%, transparent); --ink: #3256ac; --ink-2: color-mix(in oklab, #3256ac 70%, #495684); --rule: #C4C8DA; --rule-soft: color-mix(in oklab, #C4C8DA 55%, #D0D5E3); --graphite: #495684; --red: #ac1d47; --red-soft: color-mix(in oklab, #F52A65 18%, #D0D5E3); --blue: #2058a3; --blue-soft: color-mix(in oklab, #2E7DE9 16%, #D0D5E3); --green: #4b6330; --green-soft: color-mix(in oklab, #587539 18%, #D0D5E3); --highlight: color-mix(in oklab, #8C6C3E 42%, #D0D5E3); --on-blue: #E1E2E7; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-tokyonight-storm"] { --paper: #24283B; --paper-2: color-mix(in oklab, #292E42 60%, #24283B); --card: #292E42; --grid: color-mix(in srgb, #3B4261 45%, transparent); --margin: color-mix(in srgb, #F7768E 45%, transparent); --ink: #c0caf5; --ink-2: color-mix(in oklab, #c0caf5 70%, #a9b1d6); --rule: #3B4261; --rule-soft: color-mix(in oklab, #3B4261 55%, #292E42); --graphite: #a9b1d6; --red: #f7768e; --red-soft: color-mix(in oklab, #F7768E 18%, #292E42); --blue: #7aa2f7; --blue-soft: color-mix(in oklab, #7AA2F7 16%, #292E42); --green: #9ece6a; --green-soft: color-mix(in oklab, #9ECE6A 18%, #292E42); --highlight: color-mix(in srgb, #E0AF68 38%, transparent); --on-blue: #24283B; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-tokyonight-night"] { --paper: #1A1B26; --paper-2: color-mix(in oklab, #292E42 60%, #1A1B26); --card: #292E42; --grid: color-mix(in srgb, #3B4261 45%, transparent); --margin: color-mix(in srgb, #F7768E 45%, transparent); --ink: #c0caf5; --ink-2: color-mix(in oklab, #c0caf5 70%, #a9b1d6); --rule: #3B4261; --rule-soft: color-mix(in oklab, #3B4261 55%, #292E42); --graphite: #a9b1d6; --red: #f7768e; --red-soft: color-mix(in oklab, #F7768E 18%, #292E42); --blue: #7aa2f7; --blue-soft: color-mix(in oklab, #7AA2F7 16%, #292E42); --green: #9ece6a; --green-soft: color-mix(in oklab, #9ECE6A 18%, #292E42); --highlight: color-mix(in srgb, #E0AF68 38%, transparent); --on-blue: #1A1B26; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-catppuccin-latte"] { --paper: #EFF1F5; --paper-2: color-mix(in oklab, #CCD0DA 60%, #EFF1F5); --card: #CCD0DA; --grid: color-mix(in srgb, #BCC0CC 45%, transparent); --margin: color-mix(in srgb, #D20F39 45%, transparent); --ink: #4c4f69; --ink-2: color-mix(in oklab, #4c4f69 70%, #515364); --rule: #BCC0CC; --rule-soft: color-mix(in oklab, #BCC0CC 55%, #CCD0DA); --graphite: #515364; --red: #b20d30; --red-soft: color-mix(in oklab, #D20F39 18%, #CCD0DA); --blue: #164db8; --blue-soft: color-mix(in oklab, #1E66F5 16%, #CCD0DA); --green: #26601a; --green-soft: color-mix(in oklab, #40A02B 18%, #CCD0DA); --highlight: color-mix(in oklab, #DF8E1D 42%, #CCD0DA); --on-blue: #EFF1F5; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-catppuccin-macchiato"] { --paper: #24273A; --paper-2: color-mix(in oklab, #363A4F 60%, #24273A); --card: #363A4F; --grid: color-mix(in srgb, #494D64 45%, transparent); --margin: color-mix(in srgb, #ED8796 45%, transparent); --ink: #cad3f5; --ink-2: color-mix(in oklab, #cad3f5 70%, #a5adcb); --rule: #494D64; --rule-soft: color-mix(in oklab, #494D64 55%, #363A4F); --graphite: #a5adcb; --red: #ed8796; --red-soft: color-mix(in oklab, #ED8796 18%, #363A4F); --blue: #8aadf4; --blue-soft: color-mix(in oklab, #8AADF4 16%, #363A4F); --green: #a6da95; --green-soft: color-mix(in oklab, #A6DA95 18%, #363A4F); --highlight: color-mix(in srgb, #EED49F 38%, transparent); --on-blue: #24273A; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-catppuccin-mocha"] { --paper: #1E1E2E; --paper-2: color-mix(in oklab, #313244 60%, #1E1E2E); --card: #313244; --grid: color-mix(in srgb, #45475A 45%, transparent); --margin: color-mix(in srgb, #F38BA8 45%, transparent); --ink: #cdd6f4; --ink-2: color-mix(in oklab, #cdd6f4 70%, #a6adc8); --rule: #45475A; --rule-soft: color-mix(in oklab, #45475A 55%, #313244); --graphite: #a6adc8; --red: #f38ba8; --red-soft: color-mix(in oklab, #F38BA8 18%, #313244); --blue: #89b4fa; --blue-soft: color-mix(in oklab, #89B4FA 16%, #313244); --green: #a6e3a1; --green-soft: color-mix(in oklab, #A6E3A1 18%, #313244); --highlight: color-mix(in srgb, #F9E2AF 38%, transparent); --on-blue: #1E1E2E; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-rosepine-dawn"] { --paper: #FAF4ED; --paper-2: color-mix(in oklab, #F2E9E1 60%, #FAF4ED); --card: #F2E9E1; --grid: color-mix(in srgb, #DFDAD9 45%, transparent); --margin: color-mix(in srgb, #B4637A 45%, transparent); --ink: #464261; --ink-2: color-mix(in oklab, #464261 70%, #67637d); --rule: #DFDAD9; --rule-soft: color-mix(in oklab, #DFDAD9 55%, #F2E9E1); --graphite: #67637d; --red: #995468; --red-soft: color-mix(in oklab, #B4637A 18%, #F2E9E1); --blue: #286983; --blue-soft: color-mix(in oklab, #286983 16%, #F2E9E1); --green: #526b67; --green-soft: color-mix(in oklab, #6D8F89 18%, #F2E9E1); --highlight: color-mix(in oklab, #D7827E 42%, #F2E9E1); --on-blue: #FAF4ED; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-rosepine-moon"] { --paper: #232136; --paper-2: color-mix(in oklab, #393552 60%, #232136); --card: #393552; --grid: color-mix(in srgb, #44415A 45%, transparent); --margin: color-mix(in srgb, #EB6F92 45%, transparent); --ink: #e0def4; --ink-2: color-mix(in oklab, #e0def4 70%, #a6a3bb); --rule: #44415A; --rule-soft: color-mix(in oklab, #44415A 55%, #393552); --graphite: #a6a3bb; --red: #ee85a2; --red-soft: color-mix(in oklab, #EB6F92 18%, #393552); --blue: #9ccfd8; --blue-soft: color-mix(in oklab, #9CCFD8 16%, #393552); --green: #95b1ac; --green-soft: color-mix(in oklab, #95B1AC 18%, #393552); --highlight: color-mix(in srgb, #EA9A97 38%, transparent); --on-blue: #232136; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-rosepine-main"] { --paper: #191724; --paper-2: color-mix(in oklab, #26233A 60%, #191724); --card: #26233A; --grid: color-mix(in srgb, #403D52 45%, transparent); --margin: color-mix(in srgb, #EB6F92 45%, transparent); --ink: #e0def4; --ink-2: color-mix(in oklab, #e0def4 70%, #908caa); --rule: #403D52; --rule-soft: color-mix(in oklab, #403D52 55%, #26233A); --graphite: #908caa; --red: #eb6f92; --red-soft: color-mix(in oklab, #EB6F92 18%, #26233A); --blue: #9ccfd8; --blue-soft: color-mix(in oklab, #9CCFD8 16%, #26233A); --green: #95b1ac; --green-soft: color-mix(in oklab, #95B1AC 18%, #26233A); --highlight: color-mix(in srgb, #EBBCBA 38%, transparent); --on-blue: #191724; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-nord-snow"] { --paper: #ECEFF4; --paper-2: color-mix(in oklab, #E5E9F0 60%, #ECEFF4); --card: #E5E9F0; --grid: color-mix(in srgb, #D8DEE9 45%, transparent); --margin: color-mix(in srgb, #BF616A 45%, transparent); --ink: #2e3440; --ink-2: color-mix(in oklab, #2e3440 70%, #4c566a); --rule: #D8DEE9; --rule-soft: color-mix(in oklab, #D8DEE9 55%, #E5E9F0); --graphite: #4c566a; --red: #994e55; --red-soft: color-mix(in oklab, #BF616A 18%, #E5E9F0); --blue: #4b678a; --blue-soft: color-mix(in oklab, #5E81AC 16%, #E5E9F0); --green: #5a694d; --green-soft: color-mix(in oklab, #A3BE8C 18%, #E5E9F0); --highlight: color-mix(in oklab, #EBCB8B 42%, #E5E9F0); --on-blue: #ECEFF4; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-nord-frost"] { --paper: #3B4252; --paper-2: color-mix(in oklab, #434C5E 60%, #3B4252); --card: #434C5E; --grid: color-mix(in srgb, #4C566A 45%, transparent); --margin: color-mix(in srgb, #BF616A 45%, transparent); --ink: #eceff4; --ink-2: color-mix(in oklab, #eceff4 70%, #d8dee9); --rule: #4C566A; --rule-soft: color-mix(in oklab, #4C566A 55%, #434C5E); --graphite: #d8dee9; --red: #dfb0b4; --red-soft: color-mix(in oklab, #BF616A 18%, #434C5E); --blue: #94c6d5; --blue-soft: color-mix(in oklab, #88C0D0 16%, #434C5E); --green: #acc498; --green-soft: color-mix(in oklab, #A3BE8C 18%, #434C5E); --highlight: color-mix(in srgb, #EBCB8B 38%, transparent); --on-blue: #3B4252; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-nord-polar"] { --paper: #2E3440; --paper-2: color-mix(in oklab, #3B4252 60%, #2E3440); --card: #3B4252; --grid: color-mix(in srgb, #434C5E 45%, transparent); --margin: color-mix(in srgb, #BF616A 45%, transparent); --ink: #eceff4; --ink-2: color-mix(in oklab, #eceff4 70%, #d8dee9); --rule: #434C5E; --rule-soft: color-mix(in oklab, #434C5E 55%, #3B4252); --graphite: #d8dee9; --red: #d9a0a6; --red-soft: color-mix(in oklab, #BF616A 18%, #3B4252); --blue: #88c0d0; --blue-soft: color-mix(in oklab, #88C0D0 16%, #3B4252); --green: #a3be8c; --green-soft: color-mix(in oklab, #A3BE8C 18%, #3B4252); --highlight: color-mix(in srgb, #EBCB8B 38%, transparent); --on-blue: #2E3440; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-gruvbox-light"] { --paper: #FBF1C7; --paper-2: color-mix(in oklab, #EBDBB2 60%, #FBF1C7); --card: #EBDBB2; --grid: color-mix(in srgb, #D5C4A1 45%, transparent); --margin: color-mix(in srgb, #9D0006 45%, transparent); --ink: #3c3836; --ink-2: color-mix(in oklab, #3c3836 70%, #695e55); --rule: #D5C4A1; --rule-soft: color-mix(in oklab, #D5C4A1 55%, #EBDBB2); --graphite: #695e55; --red: #9d0006; --red-soft: color-mix(in oklab, #9D0006 18%, #EBDBB2); --blue: #076678; --blue-soft: color-mix(in oklab, #076678 16%, #EBDBB2); --green: #67630c; --green-soft: color-mix(in oklab, #79740E 18%, #EBDBB2); --highlight: color-mix(in oklab, #B57614 42%, #EBDBB2); --on-blue: #FBF1C7; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-gruvbox-soft"] { --paper: #32302F; --paper-2: color-mix(in oklab, #3C3836 60%, #32302F); --card: #3C3836; --grid: color-mix(in srgb, #504945 45%, transparent); --margin: color-mix(in srgb, #FB4934 45%, transparent); --ink: #ebdbb2; --ink-2: color-mix(in oklab, #ebdbb2 70%, #b1a390); --rule: #504945; --rule-soft: color-mix(in oklab, #504945 55%, #3C3836); --graphite: #b1a390; --red: #fc8071; --red-soft: color-mix(in oklab, #FB4934 18%, #3C3836); --blue: #89aa9d; --blue-soft: color-mix(in oklab, #83A598 16%, #3C3836); --green: #b8bb26; --green-soft: color-mix(in oklab, #B8BB26 18%, #3C3836); --highlight: color-mix(in srgb, #FABD2F 38%, transparent); --on-blue: #32302F; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-gruvbox-hard"] { --paper: #1D2021; --paper-2: color-mix(in oklab, #3C3836 60%, #1D2021); --card: #3C3836; --grid: color-mix(in srgb, #504945 45%, transparent); --margin: color-mix(in srgb, #FB4934 45%, transparent); --ink: #ebdbb2; --ink-2: color-mix(in oklab, #ebdbb2 70%, #b1a390); --rule: #504945; --rule-soft: color-mix(in oklab, #504945 55%, #3C3836); --graphite: #b1a390; --red: #fc8071; --red-soft: color-mix(in oklab, #FB4934 18%, #3C3836); --blue: #89aa9d; --blue-soft: color-mix(in oklab, #83A598 16%, #3C3836); --green: #b8bb26; --green-soft: color-mix(in oklab, #B8BB26 18%, #3C3836); --highlight: color-mix(in srgb, #FABD2F 38%, transparent); --on-blue: #1D2021; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-everforest-light"] { --paper: #FDF6E3; --paper-2: color-mix(in oklab, #EFEBD4 60%, #FDF6E3); --card: #EFEBD4; --grid: color-mix(in srgb, #E0DCC7 45%, transparent); --margin: color-mix(in srgb, #F85552 45%, transparent); --ink: #5c6a72; --ink-2: color-mix(in oklab, #5c6a72 70%, #626d61); --rule: #E0DCC7; --rule-soft: color-mix(in oklab, #E0DCC7 55%, #EFEBD4); --graphite: #626d61; --red: #ba403e; --red-soft: color-mix(in oklab, #F85552 18%, #EFEBD4); --blue: #2c6f94; --blue-soft: color-mix(in oklab, #3A94C5 16%, #EFEBD4); --green: #637101; --green-soft: color-mix(in oklab, #8DA101 18%, #EFEBD4); --highlight: color-mix(in oklab, #DFA000 42%, #EFEBD4); --on-blue: #FDF6E3; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-everforest-medium"] { --paper: #2D353B; --paper-2: color-mix(in oklab, #3D484D 60%, #2D353B); --card: #3D484D; --grid: color-mix(in srgb, #4F585E 45%, transparent); --margin: color-mix(in srgb, #E67E80 45%, transparent); --ink: #d3c6aa; --ink-2: color-mix(in oklab, #d3c6aa 70%, #b1bab3); --rule: #4F585E; --rule-soft: color-mix(in oklab, #4F585E 55%, #3D484D); --graphite: #b1bab3; --red: #eea5a6; --red-soft: color-mix(in oklab, #E67E80 18%, #3D484D); --blue: #85beb7; --blue-soft: color-mix(in oklab, #7FBBB3 16%, #3D484D); --green: #a7c080; --green-soft: color-mix(in oklab, #A7C080 18%, #3D484D); --highlight: color-mix(in srgb, #DBBC7F 38%, transparent); --on-blue: #2D353B; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-everforest-hard"] { --paper: #272E33; --paper-2: color-mix(in oklab, #374145 60%, #272E33); --card: #374145; --grid: color-mix(in srgb, #495156 45%, transparent); --margin: color-mix(in srgb, #E67E80 45%, transparent); --ink: #d3c6aa; --ink-2: color-mix(in oklab, #d3c6aa 70%, #a2ada5); --rule: #495156; --rule-soft: color-mix(in oklab, #495156 55%, #374145); --graphite: #a2ada5; --red: #eb9899; --red-soft: color-mix(in oklab, #E67E80 18%, #374145); --blue: #7fbbb3; --blue-soft: color-mix(in oklab, #7FBBB3 16%, #374145); --green: #a7c080; --green-soft: color-mix(in oklab, #A7C080 18%, #374145); --highlight: color-mix(in srgb, #DBBC7F 38%, transparent); --on-blue: #272E33; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-kanagawa-lotus"] { --paper: #F2ECBC; --paper-2: color-mix(in oklab, #E5DDB0 60%, #F2ECBC); --card: #E5DDB0; --grid: color-mix(in srgb, #D5CEA3 45%, transparent); --margin: color-mix(in srgb, #C84053 45%, transparent); --ink: #545464; --ink-2: color-mix(in oklab, #545464 70%, #605e52); --rule: #D5CEA3; --rule-soft: color-mix(in oklab, #D5CEA3 55%, #E5DDB0); --graphite: #605e52; --red: #aa3647; --red-soft: color-mix(in oklab, #C84053 18%, #E5DDB0); --blue: #455e8b; --blue-soft: color-mix(in oklab, #4D699B 16%, #E5DDB0); --green: #53673b; --green-soft: color-mix(in oklab, #6F894E 18%, #E5DDB0); --highlight: color-mix(in oklab, #DE9800 42%, #E5DDB0); --on-blue: #F2ECBC; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-kanagawa-wave"] { --paper: #1F1F28; --paper-2: color-mix(in oklab, #2A2A37 60%, #1F1F28); --card: #2A2A37; --grid: color-mix(in srgb, #363646 45%, transparent); --margin: color-mix(in srgb, #E46876 45%, transparent); --ink: #dcd7ba; --ink-2: color-mix(in oklab, #dcd7ba 70%, #c8c093); --rule: #363646; --rule-soft: color-mix(in oklab, #363646 55%, #2A2A37); --graphite: #c8c093; --red: #e5707d; --red-soft: color-mix(in oklab, #E46876 18%, #2A2A37); --blue: #7e9cd8; --blue-soft: color-mix(in oklab, #7E9CD8 16%, #2A2A37); --green: #98bb6c; --green-soft: color-mix(in oklab, #98BB6C 18%, #2A2A37); --highlight: color-mix(in srgb, #E6C384 38%, transparent); --on-blue: #1F1F28; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-kanagawa-dragon"] { --paper: #181616; --paper-2: color-mix(in oklab, #282727 60%, #181616); --card: #282727; --grid: color-mix(in srgb, #393836 45%, transparent); --margin: color-mix(in srgb, #C4746E 45%, transparent); --ink: #c5c9c5; --ink-2: color-mix(in oklab, #c5c9c5 70%, #a6a69c); --rule: #393836; --rule-soft: color-mix(in oklab, #393836 55%, #282727); --graphite: #a6a69c; --red: #c77b75; --red-soft: color-mix(in oklab, #C4746E 18%, #282727); --blue: #8ba4b0; --blue-soft: color-mix(in oklab, #8BA4B0 16%, #282727); --green: #87a987; --green-soft: color-mix(in oklab, #87A987 18%, #282727); --highlight: color-mix(in srgb, #C4B28A 38%, transparent); --on-blue: #181616; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-github-light"] { --paper: #FFFFFF; --paper-2: color-mix(in oklab, #F6F8FA 60%, #FFFFFF); --card: #F6F8FA; --grid: color-mix(in srgb, #D0D7DE 45%, transparent); --margin: color-mix(in srgb, #CF222E 45%, transparent); --ink: #1f2328; --ink-2: color-mix(in oklab, #1f2328 70%, #656d76); --rule: #D0D7DE; --rule-soft: color-mix(in oklab, #D0D7DE 55%, #F6F8FA); --graphite: #656d76; --red: #cf222e; --red-soft: color-mix(in oklab, #CF222E 18%, #F6F8FA); --blue: #0969da; --blue-soft: color-mix(in oklab, #0969DA 16%, #F6F8FA); --green: #1a7f37; --green-soft: color-mix(in oklab, #1A7F37 18%, #F6F8FA); --highlight: color-mix(in oklab, #9A6700 42%, #F6F8FA); --on-blue: #FFFFFF; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-github-dimmed"] { --paper: #22272E; --paper-2: color-mix(in oklab, #2D333B 60%, #22272E); --card: #2D333B; --grid: color-mix(in srgb, #444C56 45%, transparent); --margin: color-mix(in srgb, #E5534B 45%, transparent); --ink: #adbac7; --ink-2: color-mix(in oklab, #adbac7 70%, #919ca6); --rule: #444C56; --rule-soft: color-mix(in oklab, #444C56 55%, #2D333B); --graphite: #919ca6; --red: #ec7e78; --red-soft: color-mix(in oklab, #E5534B 18%, #2D333B); --blue: #5ca0f6; --blue-soft: color-mix(in oklab, #539BF5 16%, #2D333B); --green: #5faf62; --green-soft: color-mix(in oklab, #57AB5A 18%, #2D333B); --highlight: color-mix(in srgb, #C69026 38%, transparent); --on-blue: #22272E; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-github-dark"] { --paper: #0D1117; --paper-2: color-mix(in oklab, #161B22 60%, #0D1117); --card: #161B22; --grid: color-mix(in srgb, #30363D 45%, transparent); --margin: color-mix(in srgb, #F85149 45%, transparent); --ink: #e6edf3; --ink-2: color-mix(in oklab, #e6edf3 70%, #7d8590); --rule: #30363D; --rule-soft: color-mix(in oklab, #30363D 55%, #161B22); --graphite: #7d8590; --red: #f85149; --red-soft: color-mix(in oklab, #F85149 18%, #161B22); --blue: #2f81f7; --blue-soft: color-mix(in oklab, #2F81F7 16%, #161B22); --green: #3fb950; --green-soft: color-mix(in oklab, #3FB950 18%, #161B22); --highlight: color-mix(in srgb, #D29922 38%, transparent); --on-blue: #0D1117; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-ayu-light"] { --paper: #F8F9FA; --paper-2: color-mix(in oklab, #E7EAED 60%, #F8F9FA); --card: #E7EAED; --grid: color-mix(in srgb, #D2D5D8 45%, transparent); --margin: color-mix(in srgb, #E65050 45%, transparent); --ink: #5c6166; --ink-2: color-mix(in oklab, #5c6166 70%, #61666b); --rule: #D2D5D8; --rule-soft: color-mix(in oklab, #D2D5D8 55%, #E7EAED); --graphite: #61666b; --red: #b84040; --red-soft: color-mix(in oklab, #E65050 18%, #E7EAED); --blue: #286fa1; --blue-soft: color-mix(in oklab, #399EE6 16%, #E7EAED); --green: #506b00; --green-soft: color-mix(in oklab, #86B300 18%, #E7EAED); --highlight: color-mix(in oklab, #F2AE49 42%, #E7EAED); --on-blue: #F8F9FA; --shadow: rgb(0 0 0 / 0.14); --hl-blend: multiply; color-scheme: light }
+:root[data-skin="t-ayu-mirage"] { --paper: #1F2430; --paper-2: color-mix(in oklab, #1C212B 60%, #1F2430); --card: #1C212B; --grid: color-mix(in srgb, #444A55 45%, transparent); --margin: color-mix(in srgb, #FF6666 45%, transparent); --ink: #cccac2; --ink-2: color-mix(in oklab, #cccac2 70%, #858e9d); --rule: #444A55; --rule-soft: color-mix(in oklab, #444A55 55%, #1C212B); --graphite: #858e9d; --red: #ff6666; --red-soft: color-mix(in oklab, #FF6666 18%, #1C212B); --blue: #73d0ff; --blue-soft: color-mix(in oklab, #73D0FF 16%, #1C212B); --green: #d5ff80; --green-soft: color-mix(in oklab, #D5FF80 18%, #1C212B); --highlight: color-mix(in srgb, #FFD173 38%, transparent); --on-blue: #1F2430; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+:root[data-skin="t-ayu-dark"] { --paper: #0B0E14; --paper-2: color-mix(in oklab, #0F131A 60%, #0B0E14); --card: #0F131A; --grid: color-mix(in srgb, #3C414A 45%, transparent); --margin: color-mix(in srgb, #D95757 45%, transparent); --ink: #bfbdb6; --ink-2: color-mix(in oklab, #bfbdb6 70%, #80848c); --rule: #3C414A; --rule-soft: color-mix(in oklab, #3C414A 55%, #0F131A); --graphite: #80848c; --red: #d95757; --red-soft: color-mix(in oklab, #D95757 18%, #0F131A); --blue: #59c2ff; --blue-soft: color-mix(in oklab, #59C2FF 16%, #0F131A); --green: #aad94c; --green-soft: color-mix(in oklab, #AAD94C 18%, #0F131A); --highlight: color-mix(in srgb, #FFB454 38%, transparent); --on-blue: #0B0E14; --shadow: rgb(0 0 0 / 0.4); --hl-blend: screen; color-scheme: dark }
+/* THEMES:END */
+
+* { box-sizing: border-box }
+html { background: var(--paper) }
+body {
+  background-color: var(--paper); color: var(--ink); font-family: var(--font-book); font-size: 1.125rem; line-height: 1.6;
+  background-image:
+    linear-gradient(90deg, transparent 39px, var(--margin) 39px, var(--margin) 40px, transparent 40px, transparent 43px, var(--margin) 43px, var(--margin) 44px, transparent 44px),
+    linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 100% 100%, 26px 26px, 26px 26px;
+  background-attachment: local;
+}
+.wrap { max-width: 1060px; margin: 0 auto; padding-block: 28px 72px;
+  padding-left: max(64px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px }
+@media (max-width: 640px) {
+  body { background-image:
+    linear-gradient(90deg, transparent 7px, var(--margin) 7px, var(--margin) 8px, transparent 8px, transparent 11px, var(--margin) 11px, var(--margin) 12px, transparent 12px),
+    linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px) }
+  .wrap { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+}
+h1, h2 { font-family: var(--font-book); line-height: 1.12; text-wrap: balance; margin: 0 }
+h1 { font-size: clamp(2.2rem, 1.2rem + 3.6vw, 3.6rem); font-weight: 800 }
+h2 { font-size: clamp(1.4rem, 1.1rem + 1.2vw, 2rem); font-weight: 800 }
+p { margin: 0; max-width: 64ch }
+.hand { font-family: var(--font-hand) }
+.lede { color: var(--ink-2); font-size: 1.2rem }
+.note { font-family: var(--font-hand); color: var(--blue); font-size: 1.25rem; line-height: 1.35 }
+code { font-family: var(--font-print); font-size: .92em }
+
+/* stage */
+.stage { display: flex; flex-direction: column; gap: 14px }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px }
+.tab { font-family: var(--font-print); font-size: .9rem; border: 1.5px solid var(--rule); background: var(--card); color: var(--ink);
+  padding: 6px 12px; border-radius: 4px; cursor: pointer }
+.tab[aria-selected="true"] { border-color: var(--ink); background: var(--highlight); }
+.tab:focus-visible, .btn:focus-visible, .opt:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px }
+.board { background: var(--card); border: 1.5px solid var(--rule); border-radius: 6px; box-shadow: 0 3px 10px var(--shadow); overflow-x: auto }
+.board svg { display: block; width: 100%; min-width: 720px; height: auto }
+.capbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px }
+.cap { font-family: var(--font-hand); color: var(--blue); font-size: 1.3rem; line-height: 1.4; min-height: 3.6em; max-width: 70ch; transition: opacity .25s }
+.ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px }
+.btn { font-family: var(--font-print); font-size: .95rem; border: 1.5px solid var(--ink); background: var(--card); color: var(--ink); border-radius: 4px; padding: 6px 14px; cursor: pointer }
+.btn.primary { background: var(--blue); color: var(--on-blue); border-color: var(--blue) }
+.btn[disabled] { opacity: .45; cursor: not-allowed }
+.dots { display: flex; gap: 6px; flex-wrap: wrap }
+.dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--graphite); background: transparent; padding: 0; cursor: pointer }
+.dot.on { background: var(--ink); border-color: var(--ink) }
+.dot.q { border-radius: 2px; border-color: var(--red) }
+.where { font-family: var(--font-print); font-size: .85rem; color: var(--ink-2) }
+.ask { border: 1.5px solid var(--red); border-radius: 6px; background: var(--card); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px }
+.ask .q { font-weight: 600 }
+.ask .q::before { content: "Predict first. "; font-family: var(--font-hand); color: var(--red); font-weight: 400 }
+.opts { display: flex; flex-wrap: wrap; gap: 8px }
+.opt { font-family: var(--font-book); font-size: 1rem; border: 1.5px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 4px; padding: 6px 12px; cursor: pointer }
+.opt.right { border-color: var(--green); background: var(--green-soft) }
+.opt.wrong { border-color: var(--red); background: var(--red-soft); text-decoration: line-through }
+.fb { font-family: var(--font-hand); font-size: 1.2rem; line-height: 1.4 }
+.fb.hint { color: var(--red) } .fb.why { color: var(--green) }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px }
+.skins { display: flex; flex-wrap: wrap; align-items: center; gap: 6px }
+.skins .lbl { font-family: var(--font-hand); color: var(--ink-2); font-size: 1.05rem }
+.skin { font-family: var(--font-print); font-size: .82rem; border: 1.5px solid var(--rule); background: var(--card); color: var(--ink); padding: 4px 10px; border-radius: 999px; cursor: pointer }
+.skin[aria-pressed="true"] { border-color: var(--ink); background: var(--highlight) }
+.btn.snd { display: inline-flex; align-items: center; gap: 6px }
+.btn.snd svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round }
+.btn.snd[aria-pressed="false"] .wave { display: none }
+.btn.snd[aria-pressed="true"] .mute { display: none }
+.more { font-family: var(--font-print); font-size: .82rem }
+.more summary { cursor: pointer; color: var(--ink-2); padding: 4px 0 }
+.tgrid { display: flex; flex-direction: column; gap: 6px; padding: 8px 0 }
+.tfam { display: flex; flex-wrap: wrap; align-items: center; gap: 6px }
+.tfam .fn { font-family: var(--font-hand); color: var(--ink-2); font-size: 1rem; min-width: 7.5em }
+.skin .sw { display: inline-flex; gap: 2px; margin-right: 6px; vertical-align: -1px }
+.skin .sw i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgb(127 127 127 / .45) }
+.skin:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px }
+.labbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.labbar .lbl { font-family: var(--font-hand); color: var(--red); font-size: 1.1rem }
+.flag { font-family: var(--font-print); font-size: .95rem; border: 1.5px solid var(--rule); background: var(--card); color: var(--ink); border-radius: 4px; padding: 6px 12px; cursor: pointer }
+.flag[aria-pressed="true"] { border-color: var(--ink); background: var(--highlight) }
+.flag:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px }
+#fig.hot { cursor: pointer }
+
+/* film mode: what the narrated-video renderer photographs, 1280 x 720 */
+html.film, html.film body { overflow: hidden; height: 720px }
+html.film .wrap { max-width: none; padding: 14px 0 0; margin: 0; gap: 0; align-items: center }
+html.film .wrap > :not(.stage), html.film .tabs, html.film .capbar, html.film .toolbar { display: none !important }
+html.film .board { width: 940px; overflow: hidden }
+html.film .board svg { min-width: 0 }
+.filmband { display: none }
+html.film .filmband { display: flex; flex-direction: column; justify-content: center; gap: 10px; position: fixed; left: 170px; right: 150px; bottom: 0; height: 136px }
+.filmband .fcap { font-family: var(--font-hand); color: var(--blue); font-size: 26px; line-height: 1.3 }
+.filmband .fcap .w { transition: none }
+.filmband .fq { font-family: var(--font-hand); color: var(--red); font-size: 26px; line-height: 1.3 }
+.filmband .fopts { display: flex; gap: 10px; flex-wrap: wrap }
+.filmband .fo { font-family: var(--font-print); font-size: 17px; border: 1.5px solid var(--rule); background: var(--card); color: var(--ink); border-radius: 4px; padding: 4px 10px }
+.filmband .fo.right { border-color: var(--green); background: var(--green-soft) }
+.filmband .fo.dim { opacity: .45 }
+
+/* svg voices */
+#fig text { fill: var(--ink); white-space: pre }
+#fig .mono { font-family: var(--font-print) }
+#fig .book { font-family: var(--font-book) }
+#fig .hand { font-family: var(--font-hand) }
+#fig .title { font-weight: 800 }
+#fig .dim { fill: var(--graphite) }
+#fig .t-red { fill: var(--red) } #fig .t-blue { fill: var(--blue) } #fig .t-green { fill: var(--green) } #fig .t-gr { fill: var(--graphite) }
+#fig .sheet { fill: var(--card); stroke: var(--rule); stroke-width: 1.5; filter: drop-shadow(0 2px 4px var(--shadow)) }
+#fig .paper2 { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1.5 }
+#fig .sec { fill: var(--paper); stroke: var(--rule-soft); stroke-width: 1.2 }
+#fig .ghost { fill: var(--paper-2); stroke: none }
+#fig .gl { fill: var(--rule-soft) }
+#fig .hl { fill: var(--highlight); mix-blend-mode: var(--hl-blend) }
+#fig .hl-red { fill: var(--red-soft) } #fig .hl-green { fill: var(--green-soft) } #fig .hl-blue { fill: var(--blue-soft) }
+#fig .st { fill: var(--paper); stroke: var(--rule); stroke-width: 1.4 }
+#fig .st.on { fill: var(--highlight); stroke: var(--ink) }
+#fig .st-cur { fill: none; stroke: var(--ink); stroke-width: 2.2 }
+#fig .wire { stroke: var(--graphite); stroke-width: 1.6 }
+#fig .node { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5 }
+#fig .stamp { fill: var(--red-soft); stroke: var(--red); stroke-width: 1.5 }
+#fig .slip { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1.2 }
+#fig .memcol { fill: var(--paper-2); stroke: var(--ink); stroke-width: 1.5 }
+#fig .blk { fill: var(--card); stroke: var(--ink); stroke-width: 1.4 }
+#fig .blk.lc { fill: var(--blue-soft) } #fig .blk.ld { fill: var(--green-soft) } #fig .blk.st2 { fill: var(--red-soft) }
+#fig .slot { fill: var(--paper); stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 5 4 }
+#fig .term { fill: var(--ink); stroke: none } #fig .term-t { fill: var(--paper) }
+#fig .frame { fill: var(--card); stroke: var(--ink); stroke-width: 1.3 }
+#fig .chip { fill: var(--paper); stroke: var(--rule); stroke-width: 1.4 } #fig .chip.on { fill: var(--highlight); stroke: var(--ink) }
+#fig .barA { fill: var(--blue) } #fig .barB { fill: var(--red) }
+#fig .cell { fill: var(--card); stroke: var(--ink); stroke-width: 1.5 } #fig .cell.q { stroke-dasharray: 6 5; fill: none }
+#fig .redzone { fill: var(--red-soft); stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 6 4 }
+#fig .pen path { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 }
+#fig .pen.red path { stroke: var(--red) } #fig .pen.blue path { stroke: var(--blue) } #fig .pen.green path { stroke: var(--green) } #fig .pen.gr path { stroke: var(--graphite) }
+
+/* reference blocks */
+.grid5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px }
+.grid5 > div { background: var(--card); border: 1.5px solid var(--rule); border-radius: 6px; padding: 10px 12px; min-width: 0; display: flex; flex-direction: column; gap: 6px }
+.grid5 b { font-family: var(--font-print); font-weight: 400; font-size: .85rem; background: var(--highlight); align-self: flex-start; padding: 0 6px }
+.stampx { font-family: var(--font-print); font-size: .8rem; color: var(--red); overflow-wrap: anywhere; line-height: 1.35 }
+.fix { font-family: var(--font-hand); color: var(--blue); font-size: 1.05rem; line-height: 1.3 }
+@media (max-width: 860px) { .grid5 { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (max-width: 480px) { .grid5 { grid-template-columns: minmax(0, 1fr) } }
+.tbl { overflow-x: auto; background: var(--card); border: 1.5px solid var(--rule); border-radius: 6px }
+table { border-collapse: collapse; width: 100%; font-size: .95rem }
+th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--rule-soft); vertical-align: top }
+th { font-family: var(--font-print); font-weight: 400; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2) }
+td code { white-space: nowrap }
+tr:last-child td { border-bottom: 0 }
+.cmd { font-family: var(--font-print); background: var(--card); border: 1.5px solid var(--rule); border-left: 4px solid var(--blue); padding: 10px 14px; overflow-x: auto; white-space: pre; font-size: .9rem; border-radius: 4px }
+.practice { border: 2px solid var(--red); border-radius: 6px; background: var(--card); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px }
+.practice pre { margin: 0; font-family: var(--font-print); font-size: .9rem; background: var(--paper); border: 1px solid var(--rule-soft); padding: 10px 12px; overflow-x: auto; border-radius: 4px }
+section { display: flex; flex-direction: column; gap: 14px }
+.filmsec video { width: 100%; aspect-ratio: 16 / 9; display: block; background: #111; border: 1.5px solid var(--rule); border-radius: 6px }
+.filmpick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px }
+.filmpick .skin:disabled { opacity: .5; cursor: default }
+.filmpick .lbl { font-family: var(--font-hand); color: var(--ink-2); font-size: 1.05rem }
+.filmnote { font-family: var(--font-print); font-size: .82rem; color: var(--ink-2); margin: 0 }
+@media (prefers-reduced-motion: reduce) { .cap { transition: none } }
+</style>
+
+<style>.crumb{font-family:var(--font-print);font-size:.85rem;margin-bottom:-6px}.crumb a{color:var(--ink-2)}</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="crumb"><a href="/">&larr; All lessons</a></nav>
+
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <h1>Inside a C Build</h1>
+    <p class="lede">Two tiny files, <code>main.c</code> and <code>square.c</code>, followed through five machines until the screen says 25. Every byte, address and message on the board came from a real gcc 13.3 run on Linux x86-64.</p>
+    <p class="note">Step through with Next, or press Play. With sound on, a voice reads each step. When a red box asks you to predict, pick an answer before you move on. Click a machine on the board to jump to it.</p>
+  </header>
+
+  <section class="stage" aria-label="Stage board">
+    <div class="toolbar">
+      <div class="tabs" role="tablist" aria-label="Chapters" id="tabs"></div>
+      <div class="skins" role="group" aria-label="Look" id="skins"><span class="lbl">look:</span></div>
+      <details class="more" id="more"><summary>30 more themes from the video kit</summary><div class="tgrid" id="tgrid"></div></details>
+    </div>
+    <div class="board" id="panel" role="tabpanel"><svg id="fig" viewBox="0 0 1000 600" role="img" aria-labelledby="figlabel"><title id="figlabel">Stage board</title><g id="layer"></g></svg></div>
+    <div class="capbar">
+      <p class="cap" id="cap" aria-live="polite"></p>
+      <div class="ask" id="ask" hidden>
+        <div class="q" id="askq"></div>
+        <div class="opts" id="askopts"></div>
+        <div class="fb" id="askfb" role="status" aria-live="polite" hidden></div>
+      </div>
+      <div class="labbar" id="labbar" role="group" aria-label="Compiler flags" hidden><span class="lbl">flags:</span></div>
+      <div class="ctrl">
+        <button class="btn" id="prev" type="button">Back</button>
+        <button class="btn" id="play" type="button">Play</button>
+        <button class="btn primary" id="next" type="button">Next</button>
+        <button class="btn snd" id="snd" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/><path class="mute" d="M17 9l5 6M22 9l-5 6"/></svg><span id="sndt">Sound on</span></button>
+        <div class="dots" id="dots"></div>
+        <span class="where" id="where"></span>
+      </div>
+    </div>
+    <div class="filmband" id="filmband" aria-hidden="true"></div>
+  </section>
+
+  <section class="filmsec" aria-labelledby="film-h">
+    <h2 id="film-h">Watch it as a film</h2>
+    <p>The same board, narrated end to end, about eight and a half minutes. The film matches the look you picked above when one exists; otherwise pick one here. Captions are on the CC button.</p>
+    <div class="filmpick" role="group" aria-label="Film look" id="filmpick"><span class="lbl">film:</span></div>
+    <video id="film" controls preload="metadata" playsinline></video>
+    <p class="filmnote" id="filmnote"></p>
+  </section>
+
+  <section aria-labelledby="who-h">
+    <h2 id="who-h">Who threw this error?</h2>
+    <p>Name the machine first. The fix depends on it.</p>
+    <div class="grid5">
+      <div><b>cpp, copy</b><span class="stampx">fatal error: square.h: No such file or directory</span><span class="fix">fix the path, or add -I dir</span></div>
+      <div><b>cc1, compile</b><span class="stampx">syn.c:2:2: error: expected ',' or ';' before 'return'</span><span class="fix">starts with file:line:col, so it's your code at that spot</span></div>
+      <div><b>as, assemble</b><span class="stampx">(rare when you only write C)</span><span class="fix">you'll almost never see this one</span></div>
+      <div><b>ld, link</b><span class="stampx">undefined reference to `square'<br>multiple definition of `square'</span><span class="fix">missing .o or -l, wrong library order, or a definition in a header</span></div>
+      <div><b>ld.so, load + run</b><span class="stampx">error while loading shared libraries: libsquare.so<br>Segmentation fault</span><span class="fix">.so not found, or a bug in your logic: use -g and sanitizers</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="flags-h">
+    <h2 id="flags-h">Flags in one place</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Want to</th><th>Flag</th><th>Real result here</th></tr></thead>
+      <tbody>
+        <tr><td>Stop after copy, compile or assemble</td><td><code>-E</code> <code>-S</code> <code>-c</code></td><td>main.i (825 lines), main.s, main.o (1,576 B)</td></tr>
+        <tr><td>Keep every middle file</td><td><code>-save-temps</code></td><td>left main.i, main.s, main.o</td></tr>
+        <tr><td>Name the output</td><td><code>-o app</code></td><td>without it: a.out</td></tr>
+        <tr><td>See the real commands</td><td><code>-v</code> <code>-###</code></td><td>cc1, as, collect2 (calls ld)</td></tr>
+        <tr><td>Headers, macros, libraries</td><td><code>-I</code> <code>-D N=7</code> <code>-L.</code> <code>-lsq</code></td><td>libraries go after the files that use them</td></tr>
+        <tr><td>Warnings</td><td><code>-Wall -Wextra -Wshadow -Wconversion</code></td><td>103, 156, 172 warnings on, by level</td></tr>
+        <tr><td>Warnings as errors</td><td><code>-Werror</code> <code>-Werror=format</code></td><td>exit 1, no binary written</td></tr>
+        <tr><td>Language version</td><td><code>-std=c17</code> <code>-std=c++17</code></td><td>defaults: gnu17 and gnu++17</td></tr>
+        <tr><td>Speed or debugging</td><td><code>-O0</code> <code>-Og</code> <code>-O2</code> <code>-O3</code> <code>-Os</code> <code>-g</code></td><td>-g: 16,024 to 17,688 B</td></tr>
+        <tr><td>Catch memory and UB bugs</td><td><code>-fsanitize=address,undefined</code></td><td>stack-buffer-overflow at ub.c:6</td></tr>
+        <tr><td>Library type</td><td><code>-static</code> <code>-shared -fPIC</code></td><td>785,392 B static</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="cpp-h">
+    <h2 id="cpp-h">Your two g++ lines</h2>
+    <p class="note">Practice: slow, loud, catches the off-by-one.</p>
+    <div class="cmd">g++ -std=c++17 -Wall -Wextra -Wshadow -Wconversion -g -fsanitize=address,undefined -D_GLIBCXX_DEBUG sol.cpp -o sol</div>
+    <p class="note">What a judge usually runs.</p>
+    <div class="cmd">g++ -std=c++17 -O2 sol.cpp -o sol</div>
+  </section>
+
+  <section class="practice" aria-labelledby="pr-h">
+    <h2 id="pr-h">Your turn</h2>
+    <p>main.c and square.c disagree about what square is:</p>
+    <pre>// main.c                      // square.c
+int square(int);               double square(double x) { return x * x; }</pre>
+    <p>You build with <code>gcc -Wall -Wextra main.c square.c -o app</code>. Who catches the mismatch: the compiler, the linker, or nobody? Answer in the thread before you test it.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+
+/* ---------- hand-drawn strokes (from the lesson-notebook ink.js) ---------- */
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const r2 = (n) => Math.round(n * 100) / 100;
+const spread = (rand, amt) => (rand() * 2 - 1) * amt;
+function smooth(pts) { if (pts.length < 2) return ""; let d = `M${r2(pts[0][0])} ${r2(pts[0][1])}`;
+  for (let i = 0; i < pts.length - 1; i++) { const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    d += ` C${r2(p1[0] + (p2[0] - p0[0]) / 6)} ${r2(p1[1] + (p2[1] - p0[1]) / 6)} ${r2(p2[0] - (p3[0] - p1[0]) / 6)} ${r2(p2[1] - (p3[1] - p1[1]) / 6)} ${r2(p2[0])} ${r2(p2[1])}`; }
+  return d; }
+function line(a, b, { seed = 1, bow = 0.035, tremor = 0.008, overshoot = 0.02, steps = 6 } = {}) {
+  const rand = rng(seed), dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, bend = spread(rand, bow) * len, pts = [];
+  for (let i = 0; i <= steps; i++) { const t = i / steps, along = t * (1 + overshoot), off = Math.sin(Math.PI * t) * bend + (i === 0 || i === steps ? 0 : spread(rand, tremor) * len); pts.push([a[0] + dx * along + nx * off, a[1] + dy * along + ny * off]); }
+  return smooth(pts); }
+function loopP(cx, cy, rx, ry, seed = 1) { const rand = rng(seed), a0 = -Math.PI * (0.55 + rand() * 0.35), ph = rand() * Math.PI * 2, sh = 0.05 + rand() * 0.05, pts = [];
+  for (let i = 0; i <= 30; i++) { const t = i / 30, ang = a0 + t * Math.PI * 2 * 1.14, k = 1 + Math.sin(ang * 2 + ph) * 0.04 + spread(rand, 0.015) - sh * t; pts.push([cx + Math.cos(ang) * rx * k, cy + Math.sin(ang) * ry * k]); }
+  return smooth(pts); }
+function head(tip, u, size, seed) { const rand = rng(seed), out = [];
+  for (const s of [1, -1]) { const ang = Math.atan2(u[1], u[0]) + Math.PI + s * (0.5 + spread(rand, 0.08)), L = size * (0.9 + rand() * 0.2); out.push(line([tip[0] + Math.cos(ang) * L, tip[1] + Math.sin(ang) * L], tip, { seed: seed + s * 7, bow: 0.05, steps: 3, overshoot: 0.03 })); }
+  return out; }
+function arrowP(a, b, seed = 1, size = 11, bow = 0.06) { const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [line(a, b, { seed, bow, overshoot: 0 }), ...head(b, [(b[0] - a[0]) / len, (b[1] - a[1]) / len], size, seed + 3)]; }
+function curveP(a, c, b, seed = 1, size = 11) { const rand = rng(seed), pts = [];
+  for (let i = 0; i <= 12; i++) { const t = i / 12, m = 1 - t; pts.push([m * m * a[0] + 2 * m * t * c[0] + t * t * b[0] + (i % 12 ? spread(rand, 1.2) : 0), m * m * a[1] + 2 * m * t * c[1] + t * t * b[1] + (i % 12 ? spread(rand, 1.2) : 0)]); }
+  const p = pts[11], q = pts[12], len = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+  return [smooth(pts), ...head(q, [(q[0] - p[0]) / len, (q[1] - p[1]) / len], size, seed + 11)]; }
+const ringP = (x, y, w, h, seed = 1) => [loopP(x + w / 2, y + h / 2, w / 2 + 8, h / 2 + 7, seed)];
+const strikeP = (x1, x2, y, seed = 1) => [line([x1, y], [x2, y - 2], { seed, bow: 0.01, tremor: 0.004, steps: 8 })];
+const underP = (x1, x2, y, seed = 1) => [line([x1, y], [x2, y - 1.5], { seed, bow: 0.012, tremor: 0.003, steps: 8 })];
+const crossP = (cx, cy, s, seed = 1) => [line([cx - s, cy - s], [cx + s, cy + s], { seed, bow: 0.05, steps: 3 }), line([cx + s, cy - s], [cx - s, cy + s], { seed: seed + 1, bow: 0.05, steps: 3 })];
+const tickP = (x, y, s, seed = 1) => [smooth([[x, y + s * 0.5], [x + s * 0.35, y + s * 0.92], [x + s, y]])];
+const bracketP = (x, y1, y2, seed = 1) => [smooth([[x + 10, y1], [x + 2, y1 + 2], [x, (y1 + y2) / 2], [x + 2, y2 - 2], [x + 10, y2]])];
+
+/* ---------- scene nodes ---------- */
+const R = (k, x, y, w, h, c = "sheet", o = 1) => ({ k, t: "rect", x, y, w, h, c, o });
+const T = (k, x, y, s, c = "mono", fs = 17, a = "start", o = 1) => ({ k, t: "text", x, y, s, c, fs, a, o });
+const N = (k, x, y, v, f, c = "mono", fs = 17, a = "start") => ({ k, t: "num", x, y, v, f, c, fs, a, o: 1 });
+const L = (k, x1, y1, x2, y2, c = "wire", o = 1) => ({ k, t: "line", x1, y1, x2, y2, c, o });
+const P = (k, paths, tone = "red", dur = 650) => ({ k, t: "pen", paths, c: "pen " + tone, o: 1, dur });
+const cw = (fs) => fs * 0.6;
+const RA = (k, ref, c0, c1, c = "hl") => ({ k, t: "rect", at: { ref, c0, c1 }, c, x: 0, y: 0, w: 0, h: 0, o: 1 });
+const PA = (k, ref, c0, c1, kind = "ring", tone = "red", seed = 1) => ({ k, t: "pen", paths: [], at: { ref, c0, c1, kind, seed }, c: "pen " + tone, o: 1, dur: kind === "ring" ? 650 : 450 });
+function code(kp, x, y, lines, fs = 17, lh = 24, c = "mono") { return lines.map((s, i) => (s == null ? null : T(kp + i, x, y + i * lh, s, c, fs))).filter(Boolean); }
+function sheet(k, x, y, w, h, title, sub) { const o = [R(k, x, y, w, h), T(k + "_t", x + 16, y + 28, title, "book title", 20)]; if (sub) o.push(T(k + "_s", x + w - 14, y + 27, sub, "mono dim", 13, "end")); return o; }
+
+/* the persistent line of machines */
+const ST = [["cpp", "copy"], ["cc1", "compile"], ["as", "assemble"], ["ld", "link"], ["ld.so", "load + run"]];
+let hot = []; // clickable areas on the board, in board units: { x, y, w, h, act }
+let onStation = null, onFlag = null; // set by the UI
+function strip(act) { const o = [R("stcur", 37 + act * 188, 9, 166, 52, "st-cur")];
+  ST.forEach(([a, b], i) => { const x = 40 + i * 188; o.push(R("st" + i, x, 12, 160, 46, i === act ? "st on" : "st"), T("stt" + i, x + 80, 32, a, "mono", 17, "middle"), T("stb" + i, x + 80, 51, b, "hand t-gr", 15, "middle")); if (i < 4) o.push(L("sta" + i, x + 162, 35, x + 186, 35)); hot.push({ x, y: 12, w: 160, h: 46, act: () => onStation && onStation(i) }); });
+  return o; }
+
+/* ---------- chapter 1: copy (preprocessor) ---------- */
+const MC = ["#include <stdio.h>", '#include "square.h"', "#define N 5", "int main(void) {", "    int r = square(N);   /* N → 5 */", '    printf("%d\\n", r);', "    return 0;", "}"];
+function ch1(i) {
+  const o = strip(0), fs = 17, w = cw(fs), X = 70;
+  const grown = i >= 2;
+  o.push(...sheet("main", 50, 100, 420, grown ? 470 : 250, i >= 6 ? "main.i" : grown ? "main.i, being built" : "main.c"));
+  o.push(N("cnt", 456, 158, i < 2 ? 8 : i < 3 ? 812 : i < 4 ? 819 : 825, (v) => Math.round(v) + " lines", "mono t-blue", 15, "end"));
+  if (i < 2) {
+    o.push(...sheet("sq", 540, 100, 400, 124, "square.h"), ...code("sql", 556, 152, ["#ifndef SQUARE_H", "#define SQUARE_H", "int square(int x);", "#endif"], 15, 20));
+    o.push(...sheet("io", 540, 244, 400, 326, "stdio.h", "/usr/include"));
+    for (let j = 0; j < 9; j++) o.push(R("gl" + j, 560, 290 + j * 20, 140 + ((j * 67) % 200), 7, "gl"));
+    o.push(R("pfhl", 552, 478, 386, 24, "hl"), T("pf", 558, 495, "extern int printf (const char *, ...);", "mono", 14));
+    o.push(T("ioN", 740, 545, "…about 805 lines like these", "hand t-gr", 17, "middle"));
+  } else if (i === 2) {
+    o.push(R("io", 50, 128, 420, 236, "sheet", 0), T("io_t", 66, 156, "stdio.h", "book title", 20, "start", 0));
+    o.push(...sheet("sq", 540, 100, 400, 124, "square.h"), ...code("sql", 556, 152, ["#ifndef SQUARE_H", "#define SQUARE_H", "int square(int x);", "#endif"], 15, 20));
+  } else if (i === 3) {
+    o.push(R("sq", 50, 366, 420, 28, "sheet", 0), T("sq_t", 66, 386, "square.h", "book title", 20, "start", 0));
+  }
+  if (grown) {
+    o.push(R("ghost", 64, 136, 392, 222, "ghost"));
+    for (let j = 0; j < 9; j++) o.push(R("gl" + j, 76, 150 + j * 18, 140 + ((j * 67) % 200), 7, "gl"));
+    o.push(R("pfhl", 68, 320, 388, 24, "hl"), T("pf", 74, 337, "extern int printf (const char *, ...);", "mono", 14));
+    o.push(T("ghN", 450, 152, "≈805 lines from stdio.h", "hand t-blue", 17, "end"));
+  }
+  const ys = i < 2 ? { 1: 160, 2: 184, 3: 208, 4: 232, 5: 256, 6: 280, 7: 304, 8: 328 } : i < 6 ? { 2: 382, 3: 406, 4: 430, 5: 454, 6: 478, 7: 502, 8: 526 } : { 2: 384, 4: 412, 5: 436, 6: 460, 7: 484, 8: 508 };
+  const txt = (n) => n === 2 && i >= 3 ? "int square(int x);" : n === 5 ? (i < 4 ? MC[4] : i < 6 ? "    int r = square(5);   /* N → 5 */" : "    int r = square(5);") : MC[n - 1];
+    for (let n = 1; n <= 8; n++) { if (!(n in ys)) continue; if (n === 3 && i >= 5) continue; o.push(T("m" + n, X, ys[n], txt(n), "mono", fs, "start", n === 3 && i === 4 ? 0.45 : 1)); }
+  if (i >= 3) o.push(RA("l2hl", "m2", 0, 18, "hl-green"));
+  if (i < 2) { o.push(P("brk", bracketP(56, 145, 214, 3), "red"), T("brkN", 230, 212, "orders for the copier, not C", "hand t-red", 17)); }
+  if (i === 3) o.push(T("guard", 560, 140, "#ifndef guard: a 2nd paste comes out empty", "hand t-blue", 17));
+  if (i === 4) { o.push(PA("strike3", "m3", 0, 11, "strike", "red", 5), PA("ringN", "m5", 19, 20, "ring", "red", 9), P("arN", curveP([186, ys[3] - 4], [250, ys[3] + 10], [264, ys[5] - 20], 4, 9), "red")); }
+  if (i === 5) o.push(PA("strikeC", "m5", 25, 36, "strike", "red", 8), T("cN", 300, ys[5] + 30, "comments: deleted", "hand t-red", 17));
+  if (i === 6) {
+    o.push(T("f1", 520, 140, "No #include, no #define, no comments.", "hand t-blue", 19), T("f2", 520, 172, "Just C, plus # line markers so errors", "hand t-blue", 19), T("f3", 520, 200, "can still point at main.c.", "hand t-blue", 19));
+    o.push(R("cmdbox", 520, 240, 420, 44, "paper2"), T("cmd", 536, 268, "$ gcc -E main.c -o main.i", "mono", 17));
+    o.push(T("f4", 520, 330, "the last lines of the real main.i:", "hand t-gr", 17), ...code("tail", 536, 366, ['# 3 "main.c" 2', "", "int main(void) {", "    int r = square(5);", '    printf("%d\\n", r);', "    return 0;", "}"], 15, 24, "mono"));
+  }
+  return o;
+}
+
+/* ---------- chapter 2: compile ---------- */
+const ASM = ["main:", "    pushq   %rbp", "    movq    %rsp, %rbp", "    subq    $16, %rsp", "    movl    $5, %edi", "    call    square@PLT", "    movl    %eax, -4(%rbp)", "    ...", "    leaq    .LC0(%rip), %rax", "    call    printf@PLT"];
+function ch2(i) {
+  const o = strip(1);
+  const src = i <= 3 ? ["int r = square(5);", "main.i, line 822"] : i === 4 ? ["int square(int x) { return x * x; }", "square.c"] : ['printf("%s\\n", x);', "buggy.c, line 16"];
+  o.push(R("src", 50, 80, 900, 54, "paper2"), T("srcT", 70, 114, src[0], "mono", 22), T("srcL", 932, 113, src[1], "mono dim", 13, "end"));
+  if (i <= 3) {
+    o.push(L("e1", 215, 216, 215, 252), L("e2", 215, 296, 215, 332));
+    o.push(R("n1", 90, 172, 250, 44, "node"), T("n1t", 215, 200, "declare r : int", "mono", 17, "middle"));
+    o.push(R("n2", 90, 252, 250, 44, "node"), T("n2t", 215, 280, "call square( )", "mono", 17, "middle"));
+    o.push(R("n3", 150, 332, 130, 44, "node"));
+    if (i < 3) o.push(R("fly", 160, 338, 110, 32, "hl"));
+    o.push(T("n3t", 215, 360, "5 : int", "mono", 17, "middle"));
+  }
+  if (i >= 1 && i <= 3) o.push(T("ann", 90, 420, "square: int → int", "hand t-blue", 19), T("ann2", 90, 446, "promised by square.h", "hand t-blue", 17), P("tk", tickP(276, 400, 24, 4), "green"));
+  if (i === 2) o.push(T("qm", 350, 282, "where is it?", "hand t-red", 19));
+  if (i === 3) {
+    o.push(...sheet("asm", 520, 160, 430, 400, "main.s", "part"));
+    const fs = 16, w = cw(fs), y0 = 214;
+    o.push(...code("as", 536, y0, ASM, fs, 30), RA("fly", "as4", 12, 14));
+    o.push(PA("ringSq", "as5", 12, 22, "ring", "red", 6), T("addr", 790, y0 + 5 * 30 + 2, "address? no idea", "hand t-red", 18));
+  }
+  if (i === 4) {
+    o.push(...sheet("o0", 50, 160, 430, 300, "at -O0", "7 instructions"), R("o0hl", 66, 286, 300, 54, "hl-red"), ...code("o0l", 70, 220, ["square:", "    pushq   %rbp", "    movq    %rsp, %rbp", "    movl    %edi, -4(%rbp)", "    movl    -4(%rbp), %eax", "    imull   %eax, %eax", "    popq    %rbp", "    ret"], 16, 28));
+    o.push(P("o0br", bracketP(56, 288, 338, 2), "red"), T("o0n", 66, 500, "x goes to memory and straight back", "hand t-red", 18));
+    o.push(...sheet("o2", 520, 160, 430, 160, "at -O2", "3 instructions"), ...code("o2l", 540, 220, ["square:", "    imull   %edi, %edi", "    movl    %edi, %eax", "    ret"], 16, 28));
+    o.push(T("o2n", 540, 360, "x never leaves the register", "hand t-blue", 18));
+  }
+  if (i === 5) {
+    o.push(R("err1", 50, 170, 900, 84, "stamp"), T("err1a", 70, 204, "buggy.c:16:14: warning: format '%s' expects argument of type 'char *',", "mono t-red", 16), T("err1b", 70, 230, "    but argument 2 has type 'int' [-Wformat=]", "mono t-red", 16));
+    o.push(PA("ringLC", "err1a", 8, 13, "ring", "blue", 2), T("lcN", 70, 290, "file:line:col points at the line in your code", "hand t-blue", 19));
+    o.push(R("err2", 50, 330, 900, 60, "stamp"), T("err2a", 70, 366, "syn.c:2:2: error: expected ',' or ';' before 'return'", "mono t-red", 16));
+    o.push(T("lcN2", 70, 440, "warnings like these, and syntax and type errors, are born here", "hand t-blue", 19));
+  }
+  return o;
+}
+
+/* ---------- chapter 3: assemble ---------- */
+const ROWS = [[" c", "movl  $5, %edi", "bf 05 00 00 00"], ["11", "call  square", "e8 00 00 00 00"], ["1e", "leaq  .LC0(%rip), %rax", "48 8d 05 00 00 00 00"], ["2d", "call  printf", "e8 00 00 00 00"]];
+function ch3(i) {
+  const o = strip(2), fs = 16, w = cw(fs);
+  if (i <= 2) {
+    o.push(...sheet("a3", 50, 90, 430, 250, "main.s"), ...sheet("b3", 530, 90, 420, 250, "main.o, .text bytes"));
+    ROWS.forEach((r, j) => { const y = 160 + j * 46; o.push(T("aL" + j, 66, y, r[0] + ":  " + r[1], "mono", fs), T("bR" + j, 546, y, r[0] + ":  " + r[2], "mono", fs), P("ar" + j, arrowP([440, y - 5], [528, y - 5], 20 + j, 9, 0.02), "gr", 420)); });
+    o.push(T("bfN", 60, 380, "bf = put into edi, then 5 as four bytes, low byte first", "hand t-blue", 18));
+  }
+  if (i === 1) o.push(T("q3", 760, 206, "?? ?? ?? ??", "mono t-red", 16));
+  if (i === 2) {
+    o.push(PA("rz1", "bR1", 8, 19, "ring", "red", 11), PA("rz2", "bR2", 14, 25, "ring", "red", 12), PA("rz3", "bR3", 8, 19, "ring", "red", 13));
+    o.push(...sheet("rel", 530, 400, 420, 160, ".rela.text", "notes for ld"), ...code("rl", 546, 460, ["0x12  square    R_X86_64_PLT32", '0x21  .rodata   the "%d\\n" string', "0x2e  printf    R_X86_64_PLT32"], 15, 28));
+    o.push(P("arRel", curveP([740, 220], [800, 330], [740, 398], 31, 10), "red"));
+  }
+  if (i === 3) {
+    o.push(...sheet("mo", 50, 90, 440, 480, "main.o", "1,576 bytes"));
+    o.push(R("b3", 66, 136, 408, 74, "sec"), T("s1", 80, 164, ".text    57 bytes of code", "mono", 16), T("s1b", 80, 192, "f3 0f 1e fa 55 48 89 e5 …", "mono dim", 15));
+    o.push(R("ro", 66, 220, 408, 46, "sec"), T("s2", 80, 250, '.rodata  "%d\\n"', "mono", 16));
+    o.push(R("rel", 66, 276, 408, 76, "sec"), T("s3", 80, 304, ".rela.text   3 notes", "mono", 16), T("s3b", 80, 334, "0x12 square, 0x21 .rodata, 0x2e printf", "mono dim", 14));
+    o.push(R("sym", 66, 362, 408, 194, "sec"), T("s4", 80, 392, ".symtab", "mono", 16));
+    o.push(R("hT", 78, 408, 120, 26, "hl-green"), T("y1", 84, 427, "T  main", "mono", 18), R("hU1", 78, 446, 120, 26, "hl-red"), T("y2", 84, 465, "U  printf", "mono", 18), R("hU2", 78, 484, 120, 26, "hl-red"), T("y3", 84, 503, "U  square", "mono", 18));
+    o.push(T("yT", 220, 428, "T = defined here", "hand t-green", 18), T("yU", 220, 486, "U = someone else has it", "hand t-red", 18));
+    o.push(...sheet("so", 530, 90, 420, 190, "square.o", "1,240 bytes"), R("sosym", 546, 136, 388, 120, "sec"), T("so1", 560, 166, ".symtab", "mono", 16), R("soh", 558, 182, 120, 26, "hl-green"), T("so2", 564, 201, "T  square", "mono", 18));
+    o.push(T("nmN", 530, 330, "check it yourself:", "hand t-gr", 17), R("nmbox", 530, 344, 420, 40, "paper2"), T("nm", 546, 370, "$ nm main.o square.o", "mono", 16));
+  }
+  return o;
+}
+
+/* ---------- chapter 4: link ---------- */
+function ch4(i) {
+  const o = strip(3);
+  o.push(...sheet("mo", 50, 90, 290, 270, "main.o"));
+  o.push(T("ms1", 66, 152, "T  main", "mono t-green", 17), T("ms2", 66, 180, "U  printf", "mono t-red", 17), T("ms3", 66, 208, i >= 3 ? "U  square ✓" : "U  square", i >= 3 ? "mono t-green" : "mono t-red", 17));
+  o.push(T("mb0", 66, 300, "call square:", "mono dim", 14));
+  o.push(T("mb1", 66, 326, i >= 4 ? "e8 23 00 00 00" : "e8 00 00 00 00", "mono", 16));
+  if (i >= 4) o.push(RA("pat", "mb1", 3, 5));
+  o.push(...sheet("so", 370, 90, 280, 150, "square.o"), T("ss1", 386, 152, "T  square", "mono t-green", 17));
+  o.push(...sheet("lc", 680, 90, 270, 150, "libc.so.6", "shared"), T("ls1", 696, 152, "T  printf", "mono t-green", 17), T("ls2", 696, 180, "T  puts, malloc, …", "mono dim", 15));
+  if (i <= 2) { o.push(T("crtN", 50, 462, "gcc adds these too (from gcc -v):", "hand t-gr", 17)); ["Scrt1.o", "crti.o", "crtbeginS.o", "crtendS.o", "crtn.o"].forEach((n, j) => o.push(R("c" + j, 50 + j * 182, 474, 170, 40, "slip"), T("ct" + j, 135 + j * 182, 500, n, "mono", 16, "middle"))); }
+  if (i === 1) o.push(T("q4", 510, 300, "what if square.o is missing?", "hand t-red", 19, "middle"));
+  if (i === 2) {
+    const so = o.find((n) => n.k === "so"); so.o = 0.3;
+    o.push(P("xso", crossP(510, 165, 50, 4), "red"));
+    o.push(R("err", 50, 380, 900, 64, "stamp"), T("errT", 70, 418, "/usr/bin/ld: main.c:(.text+0x12): undefined reference to `square'", "mono t-red", 16));
+    o.push(PA("ring12", "errT", 20, 32, "ring", "blue", 3), T("n12", 570, 300, "0x12 = the blank as left", "hand t-blue", 19));
+  }
+  if (i >= 3) o.push(P("link1", arrowP([170, 202], [380, 148], 41, 11, 0.12), "green"), P("tk1", tickP(612, 128, 22, 2), "green"));
+  if (i >= 4) {
+    o.push(T("a1", 200, 152, "→ 0x1149", "hand t-blue", 18), T("a2", 500, 152, "→ 0x1182", "hand t-blue", 18));
+    o.push(T("fx1", 50, 400, "0x115f (the next instruction) + 0x23 = 0x1182, where square lives", "hand t-blue", 20));
+  }
+  if (i >= 5) {
+    o.push(P("link2", curveP([170, 176], [470, 290], [690, 176], 52, 11), "gr"), T("lz", 400, 300, "not now: at load time", "hand t-gr", 18));
+    o.push(T("fx2", 50, 440, "call printf:  e8 d5 fe ff ff  →  printf@plt at 0x1050, a stub that reads a slot", "mono", 15));
+  }
+  if (i === 6) {
+    o.push(T("bl1", 50, 494, "app, dynamic: 16,024 bytes", "mono", 15), R("bar1", 50, 502, 14, 22, "barA"));
+    o.push(T("bl2", 50, 548, "gcc -static: 785,392 bytes, 49 times bigger", "mono", 15), R("bar2", 50, 556, 700, 22, "barB"));
+  }
+  return o;
+}
+
+/* ---------- chapter 5: load + run ---------- */
+const EV = ["$ ./app", 'execve("./app"): kernel maps app', "kernel starts the INTERP: ld-linux", "ld-linux: open /etc/ld.so.cache", "ld-linux: open + mmap libc.so.6", "ld-linux: fill printf's slot", "jump to _start at 0x1060", "_start → __libc_start_main → main", "main → square(5) → 25", 'printf → write(1, "25\\n", 3)', "exit_group(0)"];
+const EVN = [2, 2, 3, 5, 6, 8, 9, 11];
+function ch5(i) {
+  const o = strip(4), n = EVN[i];
+  o.push(R("mem", 620, 80, 330, 500, "memcol"), T("memT", 785, 104, "the process's memory", "hand t-gr", 17, "middle"));
+  if (i < 7) {
+    o.push(R("bk_st", 640, 118, 290, 46, "blk st2"), T("bst", 652, 146, "stack      0x7ffffffdb000", "mono", 14));
+    o.push(R("bk_app", 640, 420, 290, 140, "blk"), T("bapp", 652, 446, "app", "mono", 16), T("bapp2", 918, 446, "0x555555554000", "mono dim", 14, "end"), T("bapp3", 652, 474, "code, data, and one slot:", "mono dim", 13));
+    o.push(R("got", 652, 494, 266, 40, "slot"), T("gotT", 662, 520, i >= 4 ? "printf slot: 0x7ffff7c60100" : "printf slot: 0x1030", i >= 4 ? "mono t-blue" : "mono", 12));
+    o.push(T("gap", 785, 400, "a huge empty gap", "hand t-gr", 15, "middle"));
+  }
+  if (i >= 2 && i < 7) o.push(R("bk_ld", 640, 180, 290, 60, "blk ld"), T("bld", 652, 204, "ld-linux-x86-64.so.2", "mono", 14), T("bld2", 652, 228, "0x7ffff7fc5000", "mono dim", 14));
+  if (i >= 3 && i < 7) o.push(R("bk_lc", 640, 256, 290, 120, "blk lc"), T("blc", 652, 282, "libc.so.6", "mono", 16), T("blc2", 918, 282, "0x7ffff7c00000", "mono dim", 14, "end"), R("pfx", 652, 300, 266, 34, "sec"), T("blc3", 662, 322, "printf at 0x7ffff7c60100", "mono", 14));
+  if (i >= 4 && i < 7) o.push(P("gotA", curveP([920, 512], [990, 420], [920, 318], 77, 10), "blue"));
+  for (let j = 0; j < n; j++) { if (j === n - 1) o.push(R("evh", 46, 96 + j * 28, 560, 26, "hl")); o.push(T("ev" + j, 54, 114 + j * 28, EV[j], "mono", 15)); }
+  if (i === 1) o.push(T("q5", 330, 200, "who goes first?", "hand t-red", 20, "middle"));
+  const frames = i === 5 ? 3 : i === 6 ? 4 : 0;
+  if (frames) {
+    o.push(T("csT", 50, 430, "call stack", "hand t-gr", 17));
+    ["_start", "__libc_start_main", "main", "square(x = 5)"].slice(0, frames).forEach((f, j) => o.push(R("fr" + j, 50, 548 - j * 32, 290, 28, "frame"), T("frt" + j, 62, 568 - j * 32, f, "mono", 15)));
+    if (i === 6) o.push(T("ret", 350, 470, "returns 25 in eax", "hand t-blue", 18));
+  }
+  if (i === 7) {
+    o.push(R("term", 50, 430, 420, 120, "term"), T("tt1", 70, 470, "$ ./app", "mono term-t", 20), T("tt2", 70, 510, "25", "mono term-t", 26));
+    o.push(T("bye", 785, 330, "process gone,", "hand t-gr", 20, "middle"), T("bye2", 785, 360, "memory handed back", "hand t-gr", 20, "middle"));
+  }
+  return o;
+}
+
+/* ---------- chapter 6: flags ---------- */
+const BUG = ["int sum(int *a, int n) {", "    int total;", "    for (int i = 0; i < n; i++)", "        total += a[i];", "    return total;", "}", "int main(int argc, char **argv) {", "    int a[3] = {1, 2, 3};", "    unsigned int len = 3;", "    if (len > -1) ...", "    int x = 3.9;", '    printf("%s\\n", x);', "    if (x = 4) ...", "}"];
+const TAG = { A: 1, B: 6, C: 9, D: 10, E: 11, F: 12 };
+const CAUGHT = [["E"], ["E", "F"], ["E", "F", "C", "B"], ["E", "F", "C", "B", "D"], ["E", "F", "C", "B", "D"], ["E", "F", "C", "B", "D", "A"]];
+const WNAME = { E: "-Wformat", F: "-Wparentheses", C: "-Wsign-compare", B: "-Wunused-parameter", D: "-Wfloat-conversion", A: "-Wuninitialized" };
+const SPEED = [["-O0", 2658], ["-Og", 1177], ["-O1", 1042], ["-O2", 1057], ["-O3", 1054], ["-Os", 3445]];
+/* The flag lab. Rules read off all 16 real runs of gcc 13.3 -c buggy.c with these four flags on or off. */
+const FLAGS = [["wall", "-Wall"], ["wextra", "-Wextra"], ["wconv", "-Wconversion"], ["o2", "-O2"]];
+const LAB = { wall: false, wextra: false, wconv: false, o2: false };
+function labCaught(f) { const c = ["E"]; if (f.wall) c.push("F"); if (f.wextra) c.push("C"); if (f.wall && f.wextra) c.push("B"); if (f.wconv) c.push("D"); if (f.o2 && (f.wall || f.wextra)) c.push("A"); return c; }
+function ch6lab() {
+  const o = strip(1), caught = labCaught(LAB);
+  o.push(...sheet("bug", 50, 76, 540, 418, "buggy.c", "6 planted bugs"));
+  BUG.forEach((s, j) => o.push(T("bl" + j, 66, 128 + j * 26, s, "mono", 15)));
+  Object.entries(TAG).forEach(([t, j]) => { const on = caught.includes(t); o.push(T("tg" + t, 572, 128 + j * 26, t, on ? "hand t-red" : "hand t-gr", 18, "end")); if (on) o.push(PA("u" + t, "bl" + j, BUG[j].search(/\S/), BUG[j].length, "under", "red", 60 + j)); });
+  FLAGS.forEach(([k, f], j) => { const y = 76 + j * 50; o.push(R("fc" + j, 620, y, 330, 40, LAB[k] ? "chip on" : "chip"), T("fct" + j, 636, y + 26, f, "mono", 16), T("fcs" + j, 934, y + 26, LAB[k] ? "on" : "off", LAB[k] ? "hand" : "hand t-gr", 17, "end")); hot.push({ x: 620, y, w: 330, h: 40, act: () => onFlag && onFlag(k) }); });
+  const cmd = ["gcc", ...FLAGS.filter(([k]) => LAB[k]).map(([, f]) => f), "-c buggy.c"].join(" ");
+  o.push(T("cmdL", 620, 296, "$ " + cmd, "mono", cmd.length > 40 ? 12 : 14));
+  o.push(T("cnt6", 620, 330, `caught ${caught.length} of 6`, "hand t-blue", 19));
+  caught.forEach((t, j) => o.push(T("wn" + t, 620, 362 + j * 24, t + "  " + WNAME[t], "mono t-red", 15)));
+  const note = LAB.wextra && !LAB.wall ? ["B stays quiet: -Wunused-parameter", "needs -Wextra and -Wall together"] : LAB.o2 && !LAB.wall && !LAB.wextra ? ["-O2 alone says nothing about A:", "the check needs -Wall or -Wextra too"] : caught.length === 6 ? ["all six. this is the build to trust"] : ["click a flag, on the board or below"];
+  note.forEach((s, j) => o.push(T("ln" + j, 50, 528 + j * 26, s, "hand t-red", 18)));
+  return o;
+}
+function ch6(i) {
+  if (i === 10) return ch6lab();
+  const o = strip(1);
+  if (i <= 5) {
+    const lvl = [0, 1, 2, 3, 3, 4][i], caught = CAUGHT[i];
+    o.push(...sheet("bug", 50, 76, 540, 418, "buggy.c", "6 planted bugs"));
+    BUG.forEach((s, j) => o.push(T("bl" + j, 66, 128 + j * 26, s, "mono", 15)));
+    Object.entries(TAG).forEach(([t, j]) => { const on = caught.includes(t); o.push(T("tg" + t, 572, 128 + j * 26, t, on ? "hand t-red" : "hand t-gr", 18, "end")); if (on) o.push(PA("u" + t, "bl" + j, BUG[j].search(/\S/), BUG[j].length, "under", "red", 60 + j)); });
+    ["no flags", "+ -Wall", "+ -Wextra", "+ -Wconversion", "+ -O2"].forEach((f, j) => o.push(R("fc" + j, 620, 76 + j * 50, 330, 40, j <= lvl ? "chip on" : "chip"), T("fct" + j, 636, 102 + j * 50, f, "mono", 16)));
+    caught.forEach((t, j) => o.push(T("wn" + t, 620, 352 + j * 26, t + "  " + WNAME[t], "mono t-red", 15)));
+    if (i === 4) o.push(T("q6", 800, 520, "A is still clean. why?", "hand t-red", 19, "middle"));
+    if (i === 5) o.push(T("o2n", 620, 530, "needs the optimiser's data-flow pass", "hand t-blue", 17), T("o2n2", 620, 556, "so always do one -O2 -Wall -Wextra build", "hand t-blue", 17));
+  }
+  if (i === 6) {
+    o.push(T("spT", 50, 100, "Same billion-step loop, six levels (median of 5 runs)", "book title", 20));
+    SPEED.forEach(([l, v], j) => { const y = 132 + j * 62, wd = (v / 3445) * 640; o.push(T("sl" + j, 50, y + 22, l, "mono", 17), R("sb" + j, 110, y, wd, 30, l === "-O0" || l === "-Os" ? "barB" : "barA"), T("sv" + j, 120 + wd, y + 22, v.toLocaleString("en-US") + " ms", "mono", 15)); });
+    o.push(T("spN1", 50, 520, "-O0: the loop counter lives in memory", "hand t-red", 17), T("spN2", 50, 548, "-Os: picks the small but slow idiv for i % 7", "hand t-red", 17), T("spN3", 560, 548, "-O3 isn't automatically faster", "hand t-blue", 17));
+  }
+  if (i === 7) {
+    o.push(...sheet("ub", 50, 100, 430, 140, "your C"), ...code("ubl", 66, 160, ["int always(int x) {", "    return x + 1 > x;", "}"], 16, 26));
+    o.push(...sheet("ub2", 520, 100, 430, 140, "gcc -O2"), ...code("ub2l", 536, 160, ["always:", "    movl    $1, %eax", "    ret"], 16, 26), RA("ubhl", "ub2l1", 4, 20));
+    o.push(...sheet("ub3", 520, 270, 430, 196, "gcc -O2 -fwrapv"), ...code("ub3l", 536, 330, ["always:", "    xorl    %eax, %eax", "    cmpl    $2147483647, %edi", "    setne   %al", "    ret"], 16, 26));
+    o.push(T("ubN1", 50, 300, "signed overflow is undefined,", "hand t-red", 19), T("ubN2", 50, 330, "so gcc assumes it never happens:", "hand t-red", 19), T("ubN3", 50, 360, "x + 1 > x is always true", "hand t-red", 19));
+  }
+  if (i === 8) {
+    o.push(T("arT", 50, 110, "int a[4] = {1, 2, 3, 4};   read a[4]", "mono", 18));
+    [1, 2, 3, 4].forEach((v, j) => o.push(R("ac" + j, 80 + j * 110, 170, 100, 70, "cell"), T("acv" + j, 130 + j * 110, 214, String(v), "mono", 22, "middle"), T("acl" + j, 130 + j * 110, 266, `a[${j}]`, "mono dim", 15, "middle")));
+    o.push(R("rz", 520, 170, 200, 70, "redzone"), T("rzt", 620, 212, "redzone", "hand t-red", 19, "middle"), T("acl4", 575, 266, "a[4]", "mono t-red", 15, "middle"));
+    o.push(P("ptr", arrowP([575, 132], [575, 165], 3, 10, 0.01), "red"));
+    o.push(R("r1", 50, 310, 900, 50, "paper2"), T("r1t", 66, 342, "gcc ub.c && ./ub        prints 1984866448, no complaint", "mono", 16));
+    o.push(R("r2", 50, 376, 900, 76, "stamp"), T("r2t", 66, 406, "-fsanitize=address:  ERROR: AddressSanitizer: stack-buffer-overflow", "mono t-red", 15), T("r2u", 66, 432, "                     READ of size 4 ... in main ub.c:6", "mono t-red", 15));
+    o.push(R("r3", 50, 468, 900, 50, "stamp"), T("r3t", 66, 498, "-fsanitize=undefined: ub.c:6:16: runtime error: index 4 out of bounds", "mono t-red", 15));
+  }
+  if (i === 9) {
+    o.push(T("vT", 50, 110, "for (int i = 0; i <= (int)v.size(); i++) s += v[i];", "mono", 17));
+    [1, 2, 3].forEach((v, j) => o.push(R("ac" + j, 80 + j * 110, 170, 100, 70, "cell"), T("acv" + j, 130 + j * 110, 214, String(v), "mono", 22, "middle"), T("acl" + j, 130 + j * 110, 266, `v[${j}]`, "mono dim", 15, "middle")));
+    o.push(R("rz", 410, 170, 100, 70, "cell q"), T("rzt", 460, 214, "?", "hand t-red", 26, "middle"), T("acl4", 460, 266, "v[3]", "mono t-red", 15, "middle"));
+    o.push(P("ptr", arrowP([460, 132], [460, 165], 5, 10, 0.01), "red"));
+    o.push(R("r1", 50, 310, 900, 50, "paper2"), T("r1t", 66, 342, "g++ -std=c++17 v.cpp        prints 6, looks right, is wrong", "mono", 16));
+    o.push(R("r2", 50, 376, 900, 50, "stamp"), T("r2t", 66, 406, "-D_GLIBCXX_DEBUG: attempt to subscript container with out-of-bounds index 3", "mono t-red", 15));
+    o.push(R("r3", 50, 442, 900, 50, "stamp"), T("r3t", 66, 472, "-fsanitize=address: ERROR: AddressSanitizer: heap-buffer-overflow ... v.cpp:6", "mono t-red", 15));
+  }
+  return o;
+}
+
+/* ---------- chapters ---------- */
+const CH = [
+  { name: "1 copy", scene: ch1, steps: [
+    { cap: "Meet main.c: 8 lines. The three lines starting with # aren't C. They're orders for the copier, which runs before the compiler.",
+      say: "Meet the file main dot c. Eight lines. The three lines that start with a hash sign aren't C code at all. They're orders for the copier, which runs before the compiler." },
+    { cap: "Before the copier runs, make a guess.", say: "Before the copier runs, make a guess. When it finishes, how many lines is the file?",
+      ask: { q: "The copier finishes. How many lines is the file now?", opts: ["Still 8", "About 10", "About 800", "None, it's machine code now"], ans: 2, hint: "#include means: paste that entire file right here.", why: "825. stdio.h alone brings in about 805 lines of declarations.",
+        sayQ: "When the copier finishes, how many lines is the file?", sayOpts: "Still eight? About ten? About eight hundred? Or none, because it's machine code now?",
+        sayHint: "Not quite. Hash include means: paste that entire file, right here.", sayWhy: "About eight hundred. Eight hundred and twenty-five, in fact. Standard I O dot h alone brings in about eight hundred and five lines of declarations." } },
+    { cap: "#include <stdio.h> is replaced by the whole of stdio.h, about 805 lines. One of them is the only thing the compiler will ever know about printf.",
+      say: "Hash include standard I O dot h is replaced by the whole of that file, about eight hundred and five lines. One of them is the only thing the compiler will ever know about print f." },
+    { cap: "#include \"square.h\" pastes in one line: the promise that square takes an int and returns an int. The #ifndef guard makes a second paste come out empty.",
+      say: "Hash include square dot h pastes in one line: the promise that square takes an int, and returns an int. The if-not-defined guard makes a second paste come out empty." },
+    { cap: "#define N 5 is find-and-replace. Every N becomes 5, and the #define line itself disappears.",
+      say: "Hash define N 5 is find and replace. Every N becomes 5, and the define line itself disappears." },
+    { cap: "Comments are deleted too. The compiler never sees them.", say: "Comments are deleted too. The compiler never sees them." },
+    { cap: "Out comes main.i: 825 lines of plain C. It's the only file the compiler ever reads.",
+      say: "Out comes main dot i: eight hundred and twenty-five lines of plain C. It's the only file the compiler ever reads." } ] },
+  { name: "2 compile", scene: ch2, steps: [
+    { cap: "Next stop is cc1, the actual compiler. It reads main.i and turns each statement into a tree of what it means.",
+      say: "Next stop is C C 1, the actual compiler. It reads main dot i, and turns each statement into a tree of what it means." },
+    { cap: "It checks the call against square.h's promise: takes an int, returns an int. The types match, so no error.",
+      say: "It checks the call against square dot h's promise: takes an int, returns an int. The types match, so no error." },
+    { cap: "cc1 compiles one file at a time. It has never seen square.c.", say: "C C 1 compiles one file at a time. It has never seen square dot c. So what can it write for this call?",
+      ask: { q: "So what can it write for this call?", opts: ["square's real address", "A call by name, address left blank", "A copy of square's code", "A compile error"], ans: 1, hint: "It knows square's name and type. Does it know where square lives?", why: "Only the name and the type. Where square lands gets decided two stops later, by the linker.",
+        sayQ: "C C 1 has never seen square dot c. So what can it write for this call?", sayOpts: "Square's real address? A call by name, with the address left blank? A copy of square's code? Or a compile error?",
+        sayHint: "Not quite. It knows square's name and type. Does it know where square lives?", sayWhy: "A call by name, with the address left blank. It only knows the name and the type. Where square lands gets decided two stops later, by the linker." } },
+    { cap: "Out comes assembly. The 5 moves into register edi, where x86-64 passes the first argument. The call names square, with no address.",
+      say: "Out comes assembly. The 5 moves into register E D I, where x 86 64 passes the first argument. The call names square, with no address." },
+    { cap: "Optimisation happens here too. At -O0, x takes a trip to memory and back. At -O2 it stays in a register: 3 instructions instead of 7.",
+      say: "Optimisation happens here too. At O zero, x takes a trip to memory and back. At O 2, it stays in a register: three instructions instead of seven." },
+    { cap: "Syntax errors and type warnings, like the ones you'll meet in the flag lab, come from this stop. Each points at file:line:col in your code.",
+      say: "Syntax errors and type warnings, like the ones you'll meet in the flag lab, come from this stop. Each one points at the file, line, and column in your code." } ] },
+  { name: "3 assemble", scene: ch3, steps: [
+    { cap: "The assembler, as, turns each instruction into bytes. movl $5, %edi becomes bf 05 00 00 00.",
+      say: "The assembler, A S, turns each instruction into bytes. Move 5 into E D I becomes the bytes B F, zero 5, then three zero bytes." },
+    { cap: "Now the call.", say: "Now the call. Square's address still isn't known. What goes in the four bytes after E 8, the call?",
+      ask: { q: "square's address still isn't known. What goes in the 4 bytes after e8, the call?", opts: ["The word square", "Zeros, plus a note to fix them later", "A best guess", "Nothing, as stops with an error"], ans: 1, hint: "Someone later in the line will know the address. How would as tell them where to write it?", why: "Four zero bytes and a relocation note: at byte 0x12, fill in the distance from the next instruction to square.",
+        sayQ: "Square's address still isn't known. What goes in the four bytes after E 8, the call?", sayOpts: "The word square? Zeros, plus a note to fix them later? A best guess? Or nothing, because the assembler stops with an error?",
+        sayHint: "Not quite. Someone later in the line will know the address. How would the assembler tell them where to write it?", sayWhy: "Zeros, plus a note. Four zero bytes, and a relocation note that says: at byte 0 x 12, fill in the distance from the next instruction to square." } },
+    { cap: "Every blank gets a relocation note: which bytes, which name. The linker reads these later.",
+      say: "Every blank gets a relocation note: which bytes, and which name. The linker reads these later." },
+    { cap: "Put together, that's main.o, 1,576 bytes. Its symbol table says what it has, T main, and what it needs from someone else, U printf and U square.",
+      say: "Put together, that's main dot o, fifteen hundred and seventy-six bytes. Its symbol table says what it has, T main, and what it needs from someone else: U print f, and U square." } ] },
+  { name: "4 link", scene: ch4, steps: [
+    { cap: "ld, the linker, gets main.o, square.o, libc, and five startup files gcc adds that you never wrote.",
+      say: "L D, the linker, gets main dot o, square dot o, lib C, and five startup files that G C C adds, and you never wrote." },
+    { cap: "Quick test of who does what.", say: "A test of who does what. Leave square dot o off the command line. Which tool complains?",
+      ask: { q: "Leave square.o off the command line. Which tool complains?", opts: ["cc1, the compiler", "ld, the linker", "The loader, at run time", "Nobody, it prints garbage"], ans: 1, hint: "Which tool is the first one that needs square's actual code?", why: "The linker. The compiler was happy because the header promised square exists.",
+        sayQ: "Leave square dot o off the command line. Which tool complains?", sayOpts: "The compiler? The linker? The loader, at run time? Or nobody, and it prints garbage?",
+        sayHint: "Not quite. Which tool is the first one that needs square's actual code?", sayWhy: "The linker. The compiler was happy, because the header promised that square exists." } },
+    { cap: "This is the error: undefined reference to square. The +0x12 is the exact blank the assembler left.",
+      say: "This is the error: undefined reference to square. The plus 0 x 12 is the exact blank the assembler left." },
+    { cap: "With square.o back, ld matches the U in main.o to the T in square.o. Same name, so it's resolved.",
+      say: "With square dot o back, L D matches the U in main dot o to the T in square dot o. Same name, so it's resolved." },
+    { cap: "ld picks final addresses, main at 0x1149 and square at 0x1182. Then it fills the blank: 0x23 is the distance from the next instruction to square.",
+      say: "L D picks final addresses: main at 0 x 1 1 4 9, and square at 0 x 1 1 8 2. Then it fills the blank. 0 x 23 is the distance from the next instruction to square." },
+    { cap: "printf lives in libc.so, a shared library, so its address isn't known yet. The call goes to a stub, printf@plt, that reads a slot filled in at load time.",
+      say: "Print f lives in lib C dot S O, a shared library, so its address isn't known yet. The call goes to a small stub that reads a slot, and the slot gets filled in at load time." },
+    { cap: "That's why app is only 16 KB. With -static, ld copies libc in and the file is 49 times bigger.",
+      say: "That's why app is only sixteen kilobytes. With dash static, L D copies lib C in, and the file is forty-nine times bigger." } ] },
+  { name: "5 load + run", scene: ch5, steps: [
+    { cap: "You type ./app. The kernel maps the file at 0x555555554000 and makes a stack. printf's slot still holds a placeholder, 0x1030.",
+      say: "You type dot slash app. The kernel maps the file into memory, and makes a stack. Print f's slot still holds a placeholder." },
+    { cap: "Now the new process starts running something.", say: "Now the new process starts running something. Which code runs first?",
+      ask: { q: "Which code runs first?", opts: ["main", "_start in app", "The loader, ld-linux", "printf"], ans: 2, hint: "file app says: interpreter /lib64/ld-linux-x86-64.so.2.", why: "The loader. app's INTERP header names it, so the kernel starts it first. gdb stops in ld-linux's _start before app's.",
+        sayQ: "Which code runs first?", sayOpts: "Main? Underscore start, in app? The loader? Or print f?",
+        sayHint: "Not quite. The file command says: interpreter, L D linux.", sayWhy: "The loader. App's interpreter header names it, so the kernel starts the loader first. G D B stops in the loader's start, before app's." } },
+    { cap: "The kernel starts the loader, ld-linux-x86-64.so.2. In ELF terms it's the program's interpreter, the other thing that word can mean.",
+      say: "The kernel starts the loader, L D linux. In elf terms, it's the program's interpreter: the other thing that word can mean." },
+    { cap: "The loader looks libc up in /etc/ld.so.cache, then maps libc.so.6 into memory.",
+      say: "The loader looks lib C up in its cache file, then maps lib C into memory." },
+    { cap: "It writes printf's real address, 0x7ffff7c60100, into app's slot. This build uses BIND_NOW, so that happens before main runs.",
+      say: "It writes print f's real address into app's slot. This build binds everything up front, so that happens before main runs." },
+    { cap: "Then it jumps to app's entry point, _start at 0x1060, not main. _start calls __libc_start_main, and that calls your main.",
+      say: "Then it jumps to app's entry point, underscore start, not main. Underscore start calls lib C start main, and that calls your main." },
+    { cap: "main calls square(5), which returns 25 in the eax register.", say: "Main calls square of 5, which returns 25 in the E A X register." },
+    { cap: "printf ends in one system call, write(1, \"25\\n\", 3). Then exit_group(0), and the kernel tears the process down.",
+      say: "Print f ends in one system call: write three bytes, 2, 5, and a newline, to the screen. Then exit, and the kernel tears the process down." } ] },
+  { name: "6 flags", scene: ch6, steps: [
+    { cap: "Six bugs in one file. With no flags, Ubuntu's gcc 13 catches exactly one: E, the printf mismatch. Ubuntu turns -Wformat on by default; stock gcc catches none.",
+      say: "Six bugs in one file. With no flags, Ubuntu's G C C 13 catches exactly one: E, the print f mismatch. Ubuntu switches that warning on by default. Stock G C C catches none." },
+    { cap: "-Wall adds F: if (x = 4) assigns instead of comparing.", say: "Dash W all adds F: if x equals 4, with a single equals sign, assigns instead of comparing." },
+    { cap: "-Wextra adds C, where len > -1 compares unsigned with signed, and B, the unused parameters.",
+      say: "Dash W extra adds C, where len greater than minus 1 compares unsigned with signed, and B, the unused parameters." },
+    { cap: "-Wconversion adds D: 3.9 quietly becomes 3.", say: "Dash W conversion adds D: 3 point 9 quietly becomes 3." },
+    { cap: "Bug A, total never set, still slips through.", say: "Bug A, total never set, still slips through. Which flag finds it?",
+      ask: { q: "Which flag finds it?", opts: ["-Werror", "-O2", "-Wpedantic", "-g"], ans: 1, hint: "The check has to follow how values flow through the function. Which flag turns that analysis on?", why: "-O2. The used-before-set check runs inside the optimiser's data-flow passes. At -O0 they never run.",
+        sayQ: "Bug A, total never set, still slips through. Which flag finds it?", sayOpts: "Dash W error? Dash O 2? Dash W pedantic? Or dash g?",
+        sayHint: "Not quite. The check has to follow how values flow through the function. Which flag turns that analysis on?", sayWhy: "Dash O 2. The used-before-set check runs inside the optimiser's data flow passes. At O zero, they never run." } },
+    { cap: "-O2 finds A. So do at least one build with -O2 -Wall -Wextra, even while practising.",
+      say: "Dash O 2 finds A. So do at least one build with dash O 2, dash W all, and dash W extra, even while practising." },
+    { cap: "Speed: -O0 keeps the loop counter in memory and takes 2.7 s. -O1 to -O3 tie at about 1 s here. -Os is slowest because it picks a short but slow divide.",
+      say: "Speed. At O zero, the loop counter lives in memory, and the loop takes 2 point 7 seconds. O 1 to O 3 tie at about one second here. O S is slowest, because it picks a short but slow divide." },
+    { cap: "Signed overflow is undefined, so -O2 assumes x + 1 never wraps and returns 1 without checking. -fwrapv forces a real compare.",
+      say: "Signed overflow is undefined, so dash O 2 assumes x plus 1 never wraps, and returns 1 without checking. Dash F wrap V forces a real compare." },
+    { cap: "a[4] reads past the end. A plain build prints 1984866448 without a word. The sanitizers stop right at the bad read.",
+      say: "Reading a at index 4 goes past the end. A plain build prints a garbage number, without a word. The sanitizers stop right at the bad read." },
+    { cap: "Same bug in C++: the loop reads v[3]. The plain build prints 6 and looks fine. -D_GLIBCXX_DEBUG catches it on the spot.",
+      say: "Same bug in C plus plus: the loop reads v at index 3. The plain build prints 6, and looks fine. The G L I B C X X debug switch catches it on the spot." },
+    { cap: "Your turn to drive. Switch flags on and off and watch which bugs light up. Try -Wextra on its own: does B show up?", lab: true,
+      say: "Your turn to drive. Switch the flags on and off, and watch which bugs light up. Try dash W extra on its own. Does B show up?" } ] },
+];
+
+/* ---------- engine ---------- */
+const layer = document.getElementById("layer");
+const live = new Map();
+let tweens = [], rafId = 0;
+let vclock = null; // film mode: a virtual clock in ms instead of real time
+const clock = () => (vclock == null ? performance.now() : vclock);
+const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const GEO = { rect: ["x", "y", "w", "h", "o"], text: ["x", "y", "o", "fs"], num: ["x", "y", "o", "fs", "v"], line: ["x1", "y1", "x2", "y2", "o"], pen: ["o"] };
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+function make(n) {
+  const tag = n.t === "rect" ? "rect" : n.t === "line" ? "line" : n.t === "pen" ? "g" : "text";
+  const el = document.createElementNS(NS, tag);
+  if (n.t === "pen") for (const d of n.paths) { const p = document.createElementNS(NS, "path"); p.setAttribute("d", d); p.setAttribute("pathLength", "1"); el.appendChild(p); }
+  if (n.t === "rect") el.setAttribute("rx", 4);
+  return el;
+}
+function paint(E) {
+  const n = E.n, c = E.cur, el = E.el;
+  if (n.t === "rect") { el.setAttribute("x", c.x); el.setAttribute("y", c.y); el.setAttribute("width", Math.max(0, c.w)); el.setAttribute("height", Math.max(0, c.h)); }
+  else if (n.t === "line") { el.setAttribute("x1", c.x1); el.setAttribute("y1", c.y1); el.setAttribute("x2", c.x2); el.setAttribute("y2", c.y2); }
+  else if (n.t === "text" || n.t === "num") { el.setAttribute("x", c.x); el.setAttribute("y", c.y); el.setAttribute("font-size", c.fs); el.setAttribute("text-anchor", n.a || "start"); const s = n.t === "num" ? n.f(c.v) : n.s; if (el.textContent !== s) el.textContent = s; }
+  else if (n.t === "pen") { const ps = el.children, k = ps.length, p = c.p == null ? 1 : c.p; for (let j = 0; j < k; j++) ps[j].style.strokeDashoffset = String(1 - Math.min(1, Math.max(0, p * k - j))); }
+  el.style.opacity = c.o;
+}
+function resolve(n) {
+  const E0 = live.get(n.at.ref); if (!E0) return n;
+  const el = E0.el, t = E0.n; let a, b;
+  try { const base = el.getStartPositionOfChar(0).x; a = el.getStartPositionOfChar(n.at.c0).x - base; b = el.getEndPositionOfChar(n.at.c1 - 1).x - base; } catch (e) { return n; }
+  const x0 = t.x + a, x1 = t.x + b, fs = t.fs, y = t.y, m = { ...n };
+  if (n.t === "rect") { m.x = x0 - 3; m.w = x1 - x0 + 6; m.y = y - fs * 0.92; m.h = fs * 1.3; }
+  else { const sd = n.at.seed || 1; m.paths = n.at.kind === "ring" ? ringP(x0, y - fs * 0.8, x1 - x0, fs * 1.05, sd) : n.at.kind === "strike" ? strikeP(x0 - 2, x1 + 2, y - fs * 0.3, sd) : underP(x0, x1, y + 5, sd); }
+  m.ref = el; return m;
+}
+function setClass(E) { E.el.setAttribute("class", E.n.c || ""); }
+function tween(E, to, delay, dur, done) { const from = {}; for (const k in to) from[k] = E.cur[k] ?? to[k]; tweens.push({ E, from, to, t0: clock() + delay, dur: Math.max(1, dur), done }); if (!rafId && vclock == null) rafId = requestAnimationFrame(tick); }
+function tick(now) {
+  rafId = 0; const keep = [];
+  for (const tw of tweens) {
+    const t = Math.min(1, Math.max(0, (now - tw.t0) / tw.dur)), e = ease(t);
+    for (const k in tw.to) tw.E.cur[k] = tw.from[k] + (tw.to[k] - tw.from[k]) * e;
+    paint(tw.E);
+    if (t >= 1) { if (tw.done) tw.done(); } else keep.push(tw);
+  }
+  tweens = keep; if (tweens.length && vclock == null) rafId = requestAnimationFrame(tick);
+}
+function flush() { for (const tw of tweens) { Object.assign(tw.E.cur, tw.to); paint(tw.E); if (tw.done) tw.done(); } tweens = []; if (rafId) cancelAnimationFrame(rafId); rafId = 0; }
+function render(spec, animate) {
+  flush();
+  const anim = animate && (!reduce || vclock != null), keys = new Set(spec.map((n) => n.k));
+  for (const [k, E] of live) if (!keys.has(k)) { live.delete(k); if (anim) tween(E, { o: 0 }, 0, 260, () => E.el.remove()); else E.el.remove(); }
+  let pens = 0;
+  for (let n of spec) {
+    if (n.at) n = resolve(n);
+    let E = live.get(n.k); const sig = n.t === "pen" ? n.paths.join("|") : n.t;
+    if (E && E.sig !== sig) { E.el.remove(); live.delete(n.k); E = null; }
+    const target = {}; for (const a of GEO[n.t]) target[a] = n[a] ?? (a === "o" ? 1 : 0);
+    if (!E) {
+      E = { n, el: make(n), sig, cur: { ...target } }; live.set(n.k, E); setClass(E); layer.appendChild(E.el);
+      if (n.ref && n.t === "rect") layer.insertBefore(E.el, n.ref);
+      if (n.t === "pen") { E.cur.p = anim ? 0 : 1; paint(E); if (anim) tween(E, { p: 1 }, 520 + pens++ * 300, n.dur || 650); }
+      else if (anim) { E.cur.o = 0; paint(E); tween(E, { o: target.o }, 140, 420); }
+      else paint(E);
+    } else {
+      E.n = n; setClass(E); layer.appendChild(E.el);
+      if (n.ref && n.t === "rect") layer.insertBefore(E.el, n.ref);
+      if (n.t === "text" && E.el.textContent !== n.s) E.el.textContent = n.s;
+      if (anim) tween(E, target, 0, 720); else { Object.assign(E.cur, target); paint(E); }
+    }
+  }
+  return pens;
+}
+function scene(c, s) { hot = []; return CH[c].scene(s); }
+
+/* ---------- film mode: the narrated-video renderer (teacher/skills/explorable/scripts/narrate.py) drives this ---------- */
+const FILM = /film-export/.test(location.search);
+const FILM_SKIN = null;   // a look to photograph the film in, e.g. "blueprint"; null follows the color scheme
+const FILM_CHAPTERS = null; // e.g. [0] to film only chapter 1
+if (FILM) { document.documentElement.classList.add("film"); if (FILM_SKIN) document.documentElement.dataset.skin = FILM_SKIN; }
+const filmSay = (S) => (S.ask ? `Quick check. ${S.ask.sayQ} ${S.ask.sayOpts} Pause here, and pick one. ${S.ask.sayWhy}` : S.say || S.cap);
+const SC = []; CH.forEach((C, c) => C.steps.forEach((S, s) => { if (!S.lab && (!FILM_CHAPTERS || FILM_CHAPTERS.includes(c))) SC.push({ c, s, say: filmSay(S) }); }));
+let fLast = -1, fEnd = 1, fMarks = [];
+function filmBand(i, cu) {
+  const band = document.getElementById("filmband"), { c, s, say } = SC[i], S = CH[c].steps[s];
+  if (band.dataset.i !== String(i)) {
+    band.dataset.i = String(i); band.innerHTML = "";
+    if (S.ask) {
+      const q = document.createElement("div"); q.className = "fq"; q.textContent = "Predict: " + S.ask.q; band.appendChild(q);
+      const row = document.createElement("div"); row.className = "fopts"; S.ask.opts.forEach((t) => { const b = document.createElement("span"); b.className = "fo"; b.textContent = t; row.appendChild(b); }); band.appendChild(row);
+    } else {
+      const p = document.createElement("div"); p.className = "fcap";
+      S.cap.split(" ").forEach((w, j) => { const sp = document.createElement("span"); sp.className = "w"; sp.textContent = (j ? " " : "") + w; p.appendChild(sp); });
+      band.appendChild(p);
+    }
+  }
+  if (S.ask) {
+    const at = say.indexOf(S.ask.sayWhy) / say.length, shown = cu >= at;
+    const q = band.querySelector(".fq"); q.textContent = shown ? S.ask.why : "Predict: " + S.ask.q; q.style.color = shown ? "var(--green)" : "";
+    [...band.querySelectorAll(".fo")].forEach((b, j) => { b.classList.toggle("right", shown && j === S.ask.ans); b.classList.toggle("dim", shown && j !== S.ask.ans); });
+  } else {
+    const ws = band.querySelectorAll(".w"), n = Math.ceil(cu * ws.length);
+    ws.forEach((w, j) => { w.style.opacity = j < n ? 1 : 0; });
+  }
+}
+function filmFrame(i, u, cu) {
+  if (i !== fLast) {
+    const prev = SC[i - 1], cur = SC[i];
+    flush(); vclock = 0;
+    if (!prev || prev.c !== cur.c || i !== fLast + 1) { for (const [, E] of live) E.el.remove(); live.clear(); if (prev && prev.c === cur.c) render(scene(prev.c, prev.s), false); }
+    const pens = render(scene(cur.c, cur.s), true);
+    fEnd = Math.max(1, ...tweens.map((t) => t.t0 + t.dur));
+    fMarks[i] = pens; fLast = i;
+  }
+  // The board finishes moving within the first 45% of the scene; the voice carries the rest.
+  vclock = Math.min(1, u / 0.45) * fEnd; tick(vclock);
+  // A slow camera: even scenes push in, odd scenes pull back out, so the frame is never still.
+  const sm = u * u * (3 - 2 * u), z = i % 2 ? 1.06 - 0.06 * sm : 1 + 0.06 * sm, F = document.getElementById("fig");
+  F.style.transformOrigin = "50% 45%"; F.style.transform = `scale(${z.toFixed(5)})`;
+  filmBand(i, cu);
+  return { marks: new Array(fMarks[i] || 0).fill(0) };
+}
+if (FILM) window.__filmExport = { title: "Inside a C Build", scenes: SC.map((x) => ({ say: x.say })), frame: filmFrame };
+
+/* ---------- voice: one clip per step, made with Kokoro (af_heart) ---------- */
+const VOICE = "voice/";
+const clipName = (c, s, part) => `${VOICE}c${c + 1}-s${String(s + 1).padStart(2, "0")}${part ? "-" + part : ""}.mp3`;
+let soundOn = true, armed = false, onClipEnd = null, clipReq = 0;
+const audio = FILM ? null : new Audio();
+try { const v = localStorage.getItem("cbuild-sound"); if (v === "off") soundOn = false; } catch (e) { /* storage blocked: keep default */ }
+if (audio) { audio.preload = "auto"; audio.addEventListener("ended", () => { const f = onClipEnd; onClipEnd = null; if (f) f(); }); audio.addEventListener("error", () => { const f = onClipEnd; onClipEnd = null; if (f) f(true); }); }
+function speak(src, done) {
+  if (!audio) return false;
+  const req = ++clipReq; audio.pause(); onClipEnd = null;
+  if (!soundOn || !armed) return false;
+  const fv = document.getElementById("film"); if (fv && !fv.paused) fv.pause();
+  onClipEnd = done || null; audio.src = src; audio.currentTime = 0;
+  const p = audio.play(); if (p && p.catch) p.catch(() => { if (req !== clipReq) return; const f = onClipEnd; onClipEnd = null; if (f) f(true); });
+  return true;
+}
+function hush() { if (audio) { clipReq++; audio.pause(); onClipEnd = null; } }
+
+/* ---------- UI ---------- */
+const $ = (id) => document.getElementById(id);
+const tabs = $("tabs"), cap = $("cap"), dots = $("dots"), ask = $("ask"), askq = $("askq"), askopts = $("askopts"), askfb = $("askfb"), labbar = $("labbar"), fig = $("fig");
+let ch = 0, st = 0, playing = false, timer = 0, capTimer = 0;
+const answered = {};
+CH.forEach((c, j) => { const b = document.createElement("button"); b.className = "tab"; b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "panel"); b.id = "tab" + j; b.textContent = c.name; b.addEventListener("click", () => { stop(); go(j, 0, true); }); tabs.appendChild(b); });
+function go(c, s, animate) {
+  ch = c; st = s; const C = CH[ch], S = C.steps[st], fe = document.activeElement;
+  render(scene(ch, st), animate);
+  [...tabs.children].forEach((b, j) => { b.setAttribute("aria-selected", String(j === ch)); b.tabIndex = j === ch ? 0 : -1; });
+  $("panel").setAttribute("aria-labelledby", "tab" + ch);
+  cap.style.opacity = 0; clearTimeout(capTimer); capTimer = setTimeout(() => { cap.textContent = S.cap; cap.style.opacity = 1; }, animate && !reduce ? 160 : 0);
+  const dotFocus = dots.contains(document.activeElement);
+  dots.innerHTML = "";
+  C.steps.forEach((x, j) => { const d = document.createElement("button"); d.type = "button"; d.className = "dot" + (j === st ? " on" : "") + (x.ask ? " q" : ""); d.setAttribute("aria-label", `step ${j + 1}${x.ask ? ", a question" : ""}${x.lab ? ", the flag lab" : ""}`); if (j === st) d.setAttribute("aria-current", "step"); d.addEventListener("click", () => { stop(); go(ch, j, true); }); dots.appendChild(d); });
+  if (dotFocus) dots.children[st].focus();
+  $("where").textContent = `${st + 1} of ${C.steps.length}`;
+  $("prev").disabled = ch === 0 && st === 0;
+  const last = ch === CH.length - 1 && st === C.steps.length - 1;
+  $("next").textContent = st === C.steps.length - 1 && !last ? "Next stop" : "Next";
+  $("next").disabled = last;
+  if (fe && fe.disabled) (fe.id === "prev" ? $("next") : $("prev")).focus();
+  showAsk(S); showLab(S);
+  speak(phase().clip, afterClip);
+}
+function showAsk(S) {
+  const id = ch + ":" + st;
+  if (!S.ask) { ask.hidden = true; return; }
+  ask.hidden = false; askq.textContent = S.ask.q; askopts.innerHTML = ""; askfb.hidden = true; askfb.className = "fb";
+  const state = answered[id] || { tries: 0, done: false, picked: [] };
+  S.ask.opts.forEach((txt, j) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.textContent = txt; b.id = `opt-${ch}-${st}-${j}`; b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => {
+      if (state.done || j === state.wrong) return;
+      state.tries++; state.picked.push(j); b.setAttribute("aria-pressed", "true");
+      let part;
+      if (j === S.ask.ans) { b.classList.add("right"); state.done = true; askfb.hidden = false; askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; }
+      else { b.classList.add("wrong"); state.wrong = j; askfb.hidden = false; if (state.tries >= 2) { state.done = true; askopts.children[S.ask.ans].classList.add("right"); askfb.className = "fb why"; askfb.textContent = S.ask.why; part = "why"; } else { askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; part = "hint"; } }
+      answered[id] = state;
+      const next = (failed) => { if (state.done && playing) { clearTimeout(timer); timer = setTimeout(advance, failed ? 2600 + askfb.textContent.length * 48 : 1200); } };
+      if (!speak(clipName(ch, st, part), next)) { if (state.done && playing) { clearTimeout(timer); timer = setTimeout(advance, 2600 + askfb.textContent.length * 48); } }
+    });
+    askopts.appendChild(b);
+  });
+  state.picked.forEach((j) => { const o = askopts.children[j]; o.setAttribute("aria-pressed", "true"); if (j !== S.ask.ans) o.classList.add("wrong"); });
+  if (state.done) { askopts.children[S.ask.ans].classList.add("right"); askfb.hidden = false; askfb.className = "fb why"; askfb.textContent = S.ask.why; }
+  else if (state.wrong != null) { const w = askopts.children[state.wrong]; w.classList.add("wrong"); w.setAttribute("aria-pressed", "true"); askfb.hidden = false; askfb.className = "fb hint"; askfb.textContent = "Not quite. " + S.ask.hint; }
+}
+function showLab(S) {
+  if (!S.lab) { labbar.hidden = true; return; }
+  labbar.hidden = false;
+  labbar.querySelectorAll(".flag").forEach((b) => b.remove());
+  FLAGS.forEach(([k, f]) => { const b = document.createElement("button"); b.type = "button"; b.className = "flag"; b.textContent = f; b.setAttribute("aria-pressed", String(LAB[k])); b.addEventListener("click", () => onFlag(k)); labbar.appendChild(b); });
+}
+onFlag = (k) => { clearTimeout(capTimer); LAB[k] = !LAB[k]; render(scene(ch, st), true); labbar.querySelectorAll(".flag").forEach((b, j) => b.setAttribute("aria-pressed", String(LAB[FLAGS[j][0]]))); const n = labCaught(LAB).length; $("cap").textContent = `${n} of 6 caught. ` + CH[ch].steps[st].cap; };
+onStation = (i) => { if (i === ch) return; stop(); go(i, 0, true); };
+function advance() {
+  const C = CH[ch];
+  if (st < C.steps.length - 1) go(ch, st + 1, true);
+  else if (ch < CH.length - 1) go(ch + 1, 0, true);
+  else { stop(); return; }
+  if (playing) schedule();
+}
+// What the learner is looking at now: the step, the hint after a first wrong pick, or the explanation.
+function phase() {
+  const S = CH[ch].steps[st], a = answered[ch + ":" + st];
+  if (S.ask && a && a.done) return { clip: clipName(ch, st, "why"), text: S.ask.why };
+  if (S.ask && a && a.wrong != null) return { clip: clipName(ch, st, "hint"), text: "Not quite. " + S.ask.hint };
+  return { clip: clipName(ch, st), text: S.cap };
+}
+const readMs = () => 2600 + phase().text.length * 48;
+function schedule() {
+  clearTimeout(timer);
+  const S = CH[ch].steps[st];
+  if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return;
+  if (soundOn && armed && audio && !audio.paused) return; // the clip's end moves us on
+  timer = setTimeout(advance, readMs());
+}
+function afterClip(failed) { if (!playing) return; const S = CH[ch].steps[st]; if ((S.ask && !(answered[ch + ":" + st] || {}).done) || S.lab) return; clearTimeout(timer); timer = setTimeout(advance, failed ? readMs() : 900); }
+function stop() { playing = false; clearTimeout(timer); $("play").textContent = "Play"; }
+$("play").addEventListener("click", () => { if (playing) { stop(); hush(); } else { armed = true; playing = true; $("play").textContent = "Pause"; if (!speak(phase().clip, afterClip)) schedule(); } });
+$("next").addEventListener("click", () => { stop(); advance(); });
+$("prev").addEventListener("click", () => { stop(); if (st > 0) go(ch, st - 1, false); else if (ch > 0) go(ch - 1, CH[ch - 1].steps.length - 1, false); });
+document.addEventListener("keydown", (e) => { armed = true; if (e.altKey || e.ctrlKey || e.metaKey) return; if (e.target.closest && e.target.closest("video, input, select, textarea")) return;
+  if (e.target.closest && e.target.closest("#tabs")) { const ts = [...tabs.children], i = ts.indexOf(e.target), n = ts.length; const to = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[e.key]; if (to !== undefined && i >= 0) { e.preventDefault(); ts.forEach((b, j) => { b.tabIndex = j === to ? 0 : -1; }); ts[to].focus(); } return; }
+  if (e.target.closest && e.target.closest("button") && (e.key === " " || e.key === "Enter")) return; if (e.key === "ArrowRight") { stop(); advance(); } else if (e.key === "ArrowLeft") $("prev").click(); });
+document.addEventListener("pointerdown", () => { armed = true; }, true);
+
+/* sound toggle */
+function setSound(on) { soundOn = on; const b = $("snd"); b.setAttribute("aria-pressed", String(on)); $("sndt").textContent = on ? "Sound on" : "Sound off"; try { localStorage.setItem("cbuild-sound", on ? "on" : "off"); } catch (e) { /* ignore */ } }
+setSound(soundOn);
+$("snd").addEventListener("click", () => { setSound(!soundOn); if (soundOn) { armed = true; clearTimeout(timer); if (!speak(phase().clip, afterClip) && playing) schedule(); } else { hush(); if (playing) schedule(); } });
+
+/* looks */
+const SKINS = [["", "Notebook"], ["chalk", "Chalkboard"], ["blueprint", "Blueprint"], ["tokyo", "Tokyo Night"], ["terminal", "Terminal"]];
+const THEMES = [{"k": "t-pastel-cream", "name": "Pastel Cream", "fam": "Pastel", "sw": ["#FFF7F0", "#5B6CC9", "#D2557A", "#3E9E7E"]}, {"k": "t-pastel-lavender", "name": "Pastel Lavender mist", "fam": "Pastel", "sw": ["#E9E4F5", "#5560B8", "#C2457A", "#2F8A6B"]}, {"k": "t-pastel-night", "name": "Pastel night", "fam": "Pastel", "sw": ["#2B2738", "#A9B8FF", "#F6A6C1", "#9FE2C4"]}, {"k": "t-tokyonight-day", "name": "Tokyo Night Day", "fam": "Tokyo Night", "sw": ["#E1E2E7", "#2E7DE9", "#F52A65", "#587539"]}, {"k": "t-tokyonight-storm", "name": "Tokyo Night Storm", "fam": "Tokyo Night", "sw": ["#24283B", "#7AA2F7", "#F7768E", "#9ECE6A"]}, {"k": "t-tokyonight-night", "name": "Tokyo Night Night", "fam": "Tokyo Night", "sw": ["#1A1B26", "#7AA2F7", "#F7768E", "#9ECE6A"]}, {"k": "t-catppuccin-latte", "name": "Catppuccin Latte", "fam": "Catppuccin", "sw": ["#EFF1F5", "#1E66F5", "#D20F39", "#40A02B"]}, {"k": "t-catppuccin-macchiato", "name": "Catppuccin Macchiato", "fam": "Catppuccin", "sw": ["#24273A", "#8AADF4", "#ED8796", "#A6DA95"]}, {"k": "t-catppuccin-mocha", "name": "Catppuccin Mocha", "fam": "Catppuccin", "sw": ["#1E1E2E", "#89B4FA", "#F38BA8", "#A6E3A1"]}, {"k": "t-rosepine-dawn", "name": "Ros\u00e9 Pine Dawn", "fam": "Ros\u00e9 Pine", "sw": ["#FAF4ED", "#286983", "#B4637A", "#6D8F89"]}, {"k": "t-rosepine-moon", "name": "Ros\u00e9 Pine Moon", "fam": "Ros\u00e9 Pine", "sw": ["#232136", "#9CCFD8", "#EB6F92", "#95B1AC"]}, {"k": "t-rosepine-main", "name": "Ros\u00e9 Pine Main", "fam": "Ros\u00e9 Pine", "sw": ["#191724", "#9CCFD8", "#EB6F92", "#95B1AC"]}, {"k": "t-nord-snow", "name": "Nord Snow Storm", "fam": "Nord", "sw": ["#ECEFF4", "#5E81AC", "#BF616A", "#A3BE8C"]}, {"k": "t-nord-frost", "name": "Nord Frost", "fam": "Nord", "sw": ["#3B4252", "#88C0D0", "#BF616A", "#A3BE8C"]}, {"k": "t-nord-polar", "name": "Nord Polar Night", "fam": "Nord", "sw": ["#2E3440", "#88C0D0", "#BF616A", "#A3BE8C"]}, {"k": "t-gruvbox-light", "name": "Gruvbox Light", "fam": "Gruvbox", "sw": ["#FBF1C7", "#076678", "#9D0006", "#79740E"]}, {"k": "t-gruvbox-soft", "name": "Gruvbox Soft dark", "fam": "Gruvbox", "sw": ["#32302F", "#83A598", "#FB4934", "#B8BB26"]}, {"k": "t-gruvbox-hard", "name": "Gruvbox Hard dark", "fam": "Gruvbox", "sw": ["#1D2021", "#83A598", "#FB4934", "#B8BB26"]}, {"k": "t-everforest-light", "name": "Everforest Light", "fam": "Everforest", "sw": ["#FDF6E3", "#3A94C5", "#F85552", "#8DA101"]}, {"k": "t-everforest-medium", "name": "Everforest Medium", "fam": "Everforest", "sw": ["#2D353B", "#7FBBB3", "#E67E80", "#A7C080"]}, {"k": "t-everforest-hard", "name": "Everforest Hard", "fam": "Everforest", "sw": ["#272E33", "#7FBBB3", "#E67E80", "#A7C080"]}, {"k": "t-kanagawa-lotus", "name": "Kanagawa Lotus", "fam": "Kanagawa", "sw": ["#F2ECBC", "#4D699B", "#C84053", "#6F894E"]}, {"k": "t-kanagawa-wave", "name": "Kanagawa Wave", "fam": "Kanagawa", "sw": ["#1F1F28", "#7E9CD8", "#E46876", "#98BB6C"]}, {"k": "t-kanagawa-dragon", "name": "Kanagawa Dragon", "fam": "Kanagawa", "sw": ["#181616", "#8BA4B0", "#C4746E", "#87A987"]}, {"k": "t-github-light", "name": "GitHub Light", "fam": "GitHub", "sw": ["#FFFFFF", "#0969DA", "#CF222E", "#1A7F37"]}, {"k": "t-github-dimmed", "name": "GitHub Dimmed", "fam": "GitHub", "sw": ["#22272E", "#539BF5", "#E5534B", "#57AB5A"]}, {"k": "t-github-dark", "name": "GitHub Dark", "fam": "GitHub", "sw": ["#0D1117", "#2F81F7", "#F85149", "#3FB950"]}, {"k": "t-ayu-light", "name": "Ayu Light", "fam": "Ayu", "sw": ["#F8F9FA", "#399EE6", "#E65050", "#86B300"]}, {"k": "t-ayu-mirage", "name": "Ayu Mirage", "fam": "Ayu", "sw": ["#1F2430", "#73D0FF", "#FF6666", "#D5FF80"]}, {"k": "t-ayu-dark", "name": "Ayu Dark", "fam": "Ayu", "sw": ["#0B0E14", "#59C2FF", "#D95757", "#AAD94C"]}];
+const ALLK = new Set([...SKINS.map(([k]) => k), ...THEMES.map((t) => t.k)]);
+function setSkin(k) { if (k) document.documentElement.dataset.skin = k; else delete document.documentElement.dataset.skin; document.querySelectorAll("#skins .skin, #tgrid .skin").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === k))); if (k.startsWith("t-")) $("more").open = true; try { localStorage.setItem("cbuild-skin", k); } catch (e) { /* ignore */ } if (typeof filmForSkin === "function" && !FILM) filmForSkin(k); }
+SKINS.forEach(([k, name]) => { const b = document.createElement("button"); b.type = "button"; b.className = "skin"; b.dataset.k = k; b.textContent = name; b.addEventListener("click", () => setSkin(k)); $("skins").appendChild(b); });
+{ const fams = new Map(); THEMES.forEach((t) => { if (!fams.has(t.fam)) fams.set(t.fam, []); fams.get(t.fam).push(t); });
+  for (const [fam, ts] of fams) { const row = document.createElement("div"); row.className = "tfam"; row.innerHTML = `<span class="fn"></span>`; row.firstChild.textContent = fam;
+    ts.forEach((t) => { const b = document.createElement("button"); b.type = "button"; b.className = "skin"; b.dataset.k = t.k; const sw = document.createElement("span"); sw.className = "sw"; t.sw.forEach((c) => { const i = document.createElement("i"); i.style.background = c; sw.appendChild(i); }); b.append(sw, t.name); b.addEventListener("click", () => setSkin(t.k)); row.appendChild(b); });
+    $("tgrid").appendChild(row); } }
+
+// Films: one narrated MP4 per look, served next to the page.
+const FILMS = [["", "Notebook", "notebook"], ["blueprint", "Blueprint", "blueprint"], ["tokyo", "Tokyo Night", "tokyo"], ["t-catppuccin-mocha", "Catppuccin Mocha", "catppuccin-mocha"], ["t-gruvbox-hard", "Gruvbox Hard dark", "gruvbox-hard"], ["t-rosepine-dawn", "Rosé Pine Dawn", "rosepine-dawn"], ["t-nord-polar", "Nord Polar Night", "nord-polar"], ["t-kanagawa-wave", "Kanagawa Wave", "kanagawa-wave"]];
+const FILMS_READY = new Set(["notebook", "blueprint", "tokyo"]);
+let filmK = null, capURL = null, capReq = 0;
+function setFilm(k, why) {
+  const f = FILMS.find((x) => x[0] === k) || FILMS[0], v = $("film");
+  if (filmK === f[0]) return; filmK = f[0];
+  v.pause(); v.textContent = ""; v.src = `films/c-build-${f[2]}.mp4`; v.poster = `films/c-build-${f[2]}.jpg`;
+  const t = document.createElement("track"); t.kind = "captions"; t.label = "English"; t.srclang = "en"; v.appendChild(t);
+  // captions ship as .vtt.txt (some hosts refuse .vtt), so hand the track a text/vtt blob
+  const req = ++capReq; fetch(`films/c-build-${f[2]}.vtt.txt`).then((r) => r.ok ? r.text() : Promise.reject()).then((txt) => { if (req === capReq) { if (capURL) URL.revokeObjectURL(capURL); capURL = URL.createObjectURL(new Blob([txt], { type: "text/vtt" })); t.src = capURL; } }).catch(() => { /* no captions */ });
+  document.querySelectorAll("#filmpick .skin").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === f[0])));
+  $("filmnote").textContent = why || `Playing the ${f[1]} film.`;
+}
+$("film").addEventListener("play", () => { stop(); hush(); });
+FILMS.forEach(([k, name, file]) => { if (!FILMS_READY.has(file)) return; const b = document.createElement("button"); b.type = "button"; b.className = "skin"; b.dataset.k = k; b.textContent = name; b.addEventListener("click", () => setFilm(k)); $("filmpick").appendChild(b); });
+function filmForSkin(k) { if ($("film").paused === false) return; const has = FILMS.some((x) => x[0] === k && FILMS_READY.has(x[2])); setFilm(has ? k : "", has ? null : "No film in this look yet, so this is the Notebook film."); }
+if (!FILM) { let k = ""; try { k = localStorage.getItem("cbuild-skin") || ""; } catch (e) { /* ignore */ } if (!ALLK.has(k)) k = ""; setSkin(k); }
+
+/* clicks on the board: machines in the strip, and the lab's flag chips */
+function boardPoint(e) { const m = fig.getScreenCTM(); if (!m) return null; const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse()); return p; }
+const hit = (p) => p && hot.find((h) => p.x >= h.x && p.x <= h.x + h.w && p.y >= h.y && p.y <= h.y + h.h);
+fig.addEventListener("click", (e) => { const h = hit(boardPoint(e)); if (h) h.act(); });
+fig.addEventListener("pointermove", (e) => { fig.classList.toggle("hot", !!hit(boardPoint(e))); });
+
+window.__cbuild = { CH, go, render, LAB, setSkin };
+if (!FILM) {
+  go(0, 0, false);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => render(scene(ch, st), false));
+}
+})();
+</script>
+
+
+</body>
+</html>
